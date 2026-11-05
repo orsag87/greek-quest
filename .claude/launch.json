@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "spanish-quest",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8078"],
+      "port": 8078,
+      "autoPort": false
+    }
+  ]
+}
