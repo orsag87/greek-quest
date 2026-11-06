@@ -2,10 +2,10 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "spanish-quest",
+      "name": "greek-quest",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8078"],
-      "port": 8078,
+      "runtimeArgs": ["-m", "http.server", "8079", "--directory", "/Users/janorsag/Dropbox/Greek_Quest"],
+      "port": 8079,
       "autoPort": false
     }
   ]

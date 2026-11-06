@@ -1,39 +1,43 @@
 /* ============================================================================
-   SPANISH QUEST — CONTENT FILE
+   GREEK QUEST — CONTENT FILE
    ----------------------------------------------------------------------------
    This is the file you edit to add or fix lessons. Nothing here is code logic —
-   it's just the stories, quizzes and power lessons. Safe to edit by hand.
+   it's just the stories, quizzes, power lessons and the level-check questions.
 
    WHO IT'S FOR
    ------------
-   Absolute beginners (~10 Spanish words) flying to MEXICO in ~2 months.
-   A sprint to getting by and having fun. Three rules:
-     1. No conjugation drills. Verbs are ready-made chunks: quiero, ¿me da…?,
-        necesito, ¿puedo…?, me gusta, hay, voy a…, fui a…
-     2. Cognates first (hotel, taxi, delicioso…) — new words hang off them.
-     3. Mexican Spanish only: ustedes, carro, camión, jugo, celular, ¿mande?,
-        ahorita, ¡qué padre!, la cuenta, la propina.
+   Picks up where Duolingo leaves off — but the learner might be anywhere from
+   "never seen the alphabet" to "finished the Duolingo tree". So:
+     L0 Alphabet & first words · L1 First steps (survival) · L2 On the road
+     · L3 Chatting (past + future) · L4 Beyond Duolingo (να-forms, opinions,
+     "used to", how Greeks really talk). Shown as "Level 0…4".
+   A level check on first open (PLACEMENT, at the bottom) puts them in the
+   right place; every level stays one tap away.
 
-   LEVELS
-   ------
-   L0 Cero (day 1) · L1 Sobrevivir (weeks 1–2) · L2 De viaje (weeks 3–5)
-   · L3 Platicar (weeks 6–8). Shown to the learner as "Nivel 0…3".
+   The trip: Athens (Plaka, Monastiraki, Piraeus) → the island of Naxos, with a
+   day trip to Santorini. Characters: Μαρία, Νίκος (a Naxian), κύριος Γιώργος,
+   Νίκος's grandma. "You" are Sam, from Canada.
 
    HOW A STORY WORKS
    -----------------
    {
-     id:       unique slug, prefixed with the level: "l1-tacos" (never reuse an id)
-     level:    "L0" | "L1" | "L2" | "L3"
+     id:       unique slug, prefixed with the level: "l1-taverna" (never reuse an id)
+     level:    "L0" … "L4"
      diff:     1..n  (order WITHIN a level; lower = shown first)
-     titleEs:  Spanish title
+     titleGr:  Greek title
      titleEn:  English title
-     text:     the scene. Use \n between dialogue lines (lines start with "— ").
-               Wrap anything tappable as [spanish|english]:
-                 ¿[Dónde está|where is] [el baño|the bathroom]?
-               • punctuation (¿ ¡ ? ! . ,) goes OUTSIDE the brackets
-               • nouns keep their article: [la cuenta|the check] — the engine
+     text:     the scene. Use \n between lines (dialogue lines start with "— ").
+               Wrap anything tappable as [greek|english]:
+                 [Πού είναι|where is] [η τουαλέτα|the toilet];
+               • punctuation (; ! . , ·) goes OUTSIDE the brackets.
+                 The Greek question mark is ";" — use it, it's taught in L0.
+               • nouns keep their article: [το νερό|the water] — the engine
                  still treats "article + noun" as one WORD (not a phrase)
+               • the same Greek item must always get the same English gloss
+                 (the validator warns otherwise) — e.g. παρακαλώ is always
+                 "please / you're welcome"
                • never use a plain " inside a string — use « » or “ ”
+               • NEVER type the pronunciation — the engine adds it (greek.js)
                Every glossed item becomes a spaced-repetition flashcard.
      quiz:     array of questions (see below)
    }
@@ -44,493 +48,624 @@
      { q:"...", opts:["a","b","c"], a:1, skill:"comprehension" }
         a = index of the correct option (0-based)
    Fill in the blank:
-     { q:"Type the Spanish for “please”:", opts:[], a:["por favor"], type:"fill",
+     { q:"Type the Greek for “thank you”:", opts:[], a:["ευχαριστώ"], type:"fill",
        skill:"courtesy", explain:"why this is right" }
-        a = array of accepted answers (case-, accent- and ¿¡-insensitive)
+        a = accepted answers, in Greek. The learner may type Greek OR Latin
+        letters (efharisto), any accents — answerKey() in greek.js matches them.
    Optional flags on any question:
      trick:true   -> a careful-reading question (give it an explain)
-     explain:"…"  -> shown after answering (HTML allowed, use <b> for bold)
+     notr:true    -> never show the Latin-letter pronunciation on this question.
+                     REQUIRED on alphabet-reading questions, where the
+                     pronunciation would give the answer away.
+     explain:"…"  -> shown after answering (HTML allowed; put Greek in <b>, it
+                     becomes tappable and gets its pronunciation)
 
-   Question language: English at L0–L1, simple Spanish at L2–L3.
+   Questions are in English at every level (with the Greek quoted), so a
+   learner never gets stuck on the question itself.
 
    SKILLS: the skill string must match a key in SKILLS below. That's how the
    weak-spot coaching knows what to drill. "vocab-*" skills get topped up with
    word questions from their stories; the others never get padded.
 
-   NATIVE CHECK: all Spanish here is AI-DRAFT until a Mexican Spanish speaker
-   has read it (see _DECISION_RECORD.md ADR-S03).
+   NATIVE CHECK: all Greek here is AI-DRAFT until a Greek speaker has read it
+   (see _DECISION_RECORD.md ADR-G04).
    ========================================================================== */
 
 const SKILLS = {
-  "comprehension":   { name:"Reading the scene", lesson:"Read the whole scene before answering — the answer is often in the last line. Watch the little flip words: <b>pero</b> (but), <b>no</b> (not), <b>también</b> (also), <b>más</b> (more)." },
-  "vocab-daily":     { name:"Everyday words", lesson:"Everyday words. To make them stick, say each one out loud inside a tiny sentence of your own: <b>Quiero agua.</b> <b>¿Dónde está el hotel?</b>" },
-  "vocab-food":      { name:"Food & drink", lesson:"Food & drink: <b>el agua</b> water, <b>el café</b>, <b>la cerveza</b> beer, <b>el pollo</b> chicken, <b>la carne</b> meat, <b>los frijoles</b> beans, <b>la tortilla</b>. And the big one: <b>¿pica?</b> — is it spicy?" },
-  "vocab-travel":    { name:"Getting around", lesson:"Getting around: <b>a la derecha</b> right, <b>a la izquierda</b> left, <b>derecho</b> straight ahead, <b>la cuadra</b> the block, <b>cerca</b> near, <b>lejos</b> far, <b>el boleto</b> the ticket." },
-  "vocab-numbers":   { name:"Numbers, prices & time", lesson:"Numbers and money: <b>uno, dos, tres</b>… <b>diez</b>, <b>veinte</b>, <b>cien</b>. Prices are in <b>pesos</b>. When in doubt, ask <b>¿Cuánto es?</b> and hold up your phone's calculator — totally normal." },
-  "vocab-cognates":  { name:"Free words (cognates)", lesson:"Free words! <b>-tion → -ción</b> (información), <b>-ity → -idad</b> (ciudad), <b>-ous → -oso</b> (delicioso). Watch the false friends: <b>embarazada</b> = pregnant, <b>éxito</b> = success, <b>ropa</b> = clothes." },
-  "courtesy":        { name:"Magic words", lesson:"Magic words open every door: <b>por favor</b>, <b>gracias</b>, <b>de nada</b>. <b>Disculpe</b> to get attention, <b>perdón</b> for oops, <b>con permiso</b> to squeeze past. Lead with <b>buenos días / buenas tardes</b> — it's polite in Mexico." },
-  "phrases":         { name:"Power phrases", lesson:"Learn the chunk, swap the noun: <b>Quiero</b> ___ · <b>¿Me da</b> ___? · <b>Necesito</b> ___ · <b>¿Puedo</b> ___? · <b>¿Hay</b> ___? · <b>Me gusta</b> ___. No conjugation needed." },
-  "questions":       { name:"Question words", lesson:"<b>¿qué?</b> what · <b>¿dónde?</b> where · <b>¿cuánto?</b> how much · <b>¿cuándo?</b> when · <b>¿cómo?</b> how · <b>¿quién?</b> who · <b>¿a qué hora?</b> at what time." },
-  "pronunciation":   { name:"The sounds", lesson:"Spanish is spelled the way it sounds. Vowels never change: <b>a e i o u</b> = ah, eh, ee, oh, oo. <b>h</b> is silent, <b>j</b> sounds like English h, <b>ll</b> and <b>y</b> like y, <b>ñ</b> like ny." },
-  "mexican":         { name:"Mexican Spanish", lesson:"Talk like a local: <b>¿mande?</b> (pardon?), <b>ahorita</b> (now… or later), <b>¡qué padre!</b> / <b>chido</b> (cool), <b>órale</b> (OK / wow), <b>¿neta?</b> (really?). Say <b>carro</b>, <b>celular</b>, <b>jugo</b>." },
-  "translation":     { name:"Translation", lesson:"Go both ways. Don't just recognise Spanish → English — make yourself say the Spanish from the English, out loud. That's where speaking comes from." },
-  "voy-a":           { name:"Voy a… (the future)", lesson:"The future cheat code: <b>voy a</b> + any verb as it appears in the dictionary. <b>Voy a comer</b> (I'm going to eat), <b>voy a comprar</b>, <b>vamos a la playa</b> (let's go to the beach). Zero conjugation." },
-  "past-chunks":     { name:"The past in chunks", lesson:"The past as ready-made chunks: <b>fui a</b> (I went to), <b>comí</b> (I ate), <b>compré</b> (I bought), <b>vi</b> (I saw), <b>estuvo padre</b> (it was great), <b>me gustó</b> (I liked it). Memorise them whole." },
-  "ser-estar":       { name:"Soy… / Estoy…", lesson:"Two ways to say 'I am': <b>soy</b> for who you are (<b>soy de Canadá</b>, <b>soy doctor</b>) and <b>estoy</b> for how or where you are right now (<b>estoy cansado</b>, <b>estoy en el hotel</b>)." }
+  "comprehension":   { name:"Reading the scene", lesson:"Read the whole scene before answering — the answer is often in the last line. Watch the little flip words: <b>αλλά</b> (but), <b>δεν</b> (not), <b>και</b> (and / also), <b>πιο</b> (more)." },
+  "vocab-daily":     { name:"Everyday words", lesson:"Everyday words. To make them stick, say each one out loud inside a tiny sentence of your own: <b>Θέλω νερό.</b> <b>Πού είναι το ξενοδοχείο;</b>" },
+  "vocab-food":      { name:"Food & drink", lesson:"Food & drink: <b>το νερό</b> water, <b>ο καφές</b> coffee, <b>η μπύρα</b> beer, <b>το κρασί</b> wine, <b>το ψωμί</b> bread, <b>το ψάρι</b> fish, <b>η χωριάτικη</b> Greek salad. And at the end: <b>Τον λογαριασμό, παρακαλώ.</b>" },
+  "vocab-travel":    { name:"Getting around", lesson:"Getting around: <b>αριστερά</b> left, <b>δεξιά</b> right, <b>ευθεία</b> straight on, <b>κοντά</b> near, <b>μακριά</b> far, <b>το εισιτήριο</b> ticket, <b>το πλοίο</b> ferry, <b>το λιμάνι</b> port." },
+  "vocab-numbers":   { name:"Numbers, prices & time", lesson:"Numbers and money: <b>ένα, δύο, τρία</b>… <b>δέκα</b>, <b>είκοσι</b>, <b>εκατό</b>. Prices are in <b>ευρώ</b>. When in doubt, ask <b>Πόσο κάνει;</b> and hold up your phone's calculator — totally normal." },
+  "vocab-cognates":  { name:"Free words (English is full of Greek)", lesson:"Free words — English borrowed thousands from Greek: <b>μουσική</b> music, <b>θέατρο</b> theatre, <b>φαρμακείο</b> pharmacy, <b>πρόβλημα</b> problem. Watch the trap: <b>ναι</b> = YES, and <b>όχι</b> = no." },
+  "courtesy":        { name:"Magic words", lesson:"Magic words: <b>παρακαλώ</b> (please / you're welcome), <b>ευχαριστώ</b> (thank you), <b>συγγνώμη</b> (sorry / excuse me). Greet first: <b>καλημέρα</b> in the morning, <b>καλησπέρα</b> later on. <b>Γεια σας</b> for strangers, <b>γεια σου</b> for friends." },
+  "phrases":         { name:"Power phrases", lesson:"Learn the chunk, swap the noun: <b>Θα ήθελα</b> ___ · <b>Έχετε</b> ___; · <b>Πού είναι</b> ___; · <b>Υπάρχει</b> ___; · <b>Πόσο κάνει;</b> · <b>Δεν καταλαβαίνω.</b>" },
+  "questions":       { name:"Question words", lesson:"<b>τι;</b> what · <b>πού;</b> where · <b>πότε;</b> when · <b>πόσο;</b> how much · <b>πώς;</b> how · <b>ποιος;</b> who · <b>γιατί;</b> why. Greek writes the question mark as a semicolon: <b>;</b>" },
+  "alphabet":        { name:"The alphabet", lesson:"The letters that lie: Ρ is r, Η is i, ν is n, Β is v, Χ is a throaty h, Υ is i. Letter teams: ου = oo, αι = e, ει and οι = i, μπ = b, ντ = d. Practise on signs: <b>ΤΑΞΙ</b>, <b>ΜΕΤΡΟ</b>, <b>ΦΑΡΜΑΚΕΙΟ</b>." },
+  "greek-life":      { name:"Local Greek", lesson:"Talk like a local: <b>έλα</b> (come on / hi), <b>άντε</b> (go on!), <b>σιγά σιγά</b> (slowly, slowly), <b>τέλεια</b> (perfect), <b>κανένα πρόβλημα</b> (no problem), <b>γεια μας</b> (cheers), <b>καλή όρεξη</b> (enjoy your meal)." },
+  "translation":     { name:"Translation", lesson:"Go both ways. Don't just recognise Greek → English — make yourself say the Greek from the English, out loud. That's where speaking comes from." },
+  "articles":        { name:"Ο, η, το (the)", lesson:"Every noun has a gender, and «the» shows it: <b>ο καφές</b> (masculine), <b>η μπύρα</b> (feminine), <b>το νερό</b> (neuter). After a verb they often become <b>τον</b> / <b>την</b>: <b>θα ήθελα τον λογαριασμό</b>." },
+  "likes":           { name:"Μου αρέσει (I like)", lesson:"<b>Μου αρέσει</b> + one thing, <b>μου αρέσουν</b> + several: <b>μου αρέσει η θάλασσα</b>, <b>μου αρέσουν οι ελιές</b>. Literally «it pleases me». <b>Δεν μου αρέσει</b> = I don't like." },
+  "verbs":           { name:"Verb endings", lesson:"Most verbs share endings: <b>θέλω, θέλεις, θέλει, θέλουμε, θέλετε, θέλουν</b>. The -άω group: <b>μιλάω, μιλάς, μιλάει, μιλάμε, μιλάτε, μιλάνε</b>. The -ετε / -άτε form is also the polite «you»." },
+  "past":            { name:"The past", lesson:"Learn the «I» form whole: <b>πήγα</b> I went, <b>έφαγα</b> I ate, <b>ήπια</b> I drank, <b>είδα</b> I saw, <b>έκανα</b> I did. The endings run -α, -ες, -ε, -αμε, -ατε, -αν." },
+  "future":          { name:"The future with θα", lesson:"<b>θα</b> + the short verb form: <b>θα πάω</b> I'll go, <b>θα φάω</b> I'll eat, <b>θα πιω</b> I'll drink, <b>θα δω</b> I'll see. And the classic Greek answer to any plan: <b>θα δούμε</b> — we'll see." },
+  "pronouns":        { name:"My, your, his…", lesson:"They go AFTER the noun: <b>το κινητό μου</b> my phone, <b>το κινητό σου</b> your phone, <b>του</b> his, <b>της</b> her, <b>μας</b> our, <b>σας</b> your (polite / plural), <b>τους</b> their." },
+  "states":          { name:"How you feel", lesson:"<b>Είμαι κουρασμένος</b> (a man) / <b>κουρασμένη</b> (a woman) = I'm tired. Hunger and thirst are verbs: <b>πεινάω</b>, <b>διψάω</b>. Weather «makes»: <b>κάνει ζέστη</b> it's hot, <b>κάνει κρύο</b> it's cold." },
+  "na":              { name:"να + verb", lesson:"Greek has no «to go» — it says <b>να πάω</b>. <b>Θέλω να πάω</b> I want to go · <b>Πρέπει να φύγω</b> I have to leave · <b>Μπορείς να με βοηθήσεις;</b> Can you help me? After να, use the same short form as after θα." },
+  "opinions":        { name:"Opinions", lesson:"<b>Νομίζω ότι…</b> I think that · <b>Συμφωνώ</b> I agree · <b>Δεν συμφωνώ</b> I disagree · <b>Εξαρτάται</b> it depends · <b>Έχεις δίκιο</b> you're right · <b>πιο</b> + word = more: <b>πιο ακριβό</b>." },
+  "imperfect":       { name:"Πήγα or πήγαινα?", lesson:"<b>πήγα</b> = I went (once, done). <b>πήγαινα</b> = I used to go / I was going (again and again, or in the background). Same pairs: <b>έφαγα / έτρωγα</b>, <b>είδα / έβλεπα</b>." }
 };
 
 /* ============================================================================
-   L0
+   L0 — Alphabet & first words
    ========================================================================== */
-/* LEVEL L0 — Cero · Zero */
 const STORIES_L0 = [
 
-  { id:"l0-hola", level:"L0", diff:1, titleEs:"¡Hola!", titleEn:"Hi!",
-    text:"— ¡[Hola|hi]! [Me llamo|my name is] Ana. ¿[Y tú|and you]?\n— ¡[Hola|hi]! [Me llamo|my name is] Sam.\n— [Mucho gusto|nice to meet you], Sam.\n— [Mucho gusto|nice to meet you], Ana. ¿[Cómo estás|how are you]?\n— [Muy|very] [bien|good / fine], [gracias|thank you]. ¿[Y tú|and you]?\n— [Bien|good / fine], [gracias|thank you]. ¡[Todo bien|all good]!",
+  { id:"l0-geia", level:"L0", diff:1, titleGr:"Γεια σου!", titleEn:"Hi!",
+    text:"— [Γεια σου|hi / bye]! [Με λένε|my name is] Μαρία. [Εσένα πώς σε λένε|what's your name];\n— [Γεια σου|hi / bye]! [Με λένε|my name is] Sam.\n— [Χάρηκα|nice to meet you], Sam.\n— [Χάρηκα|nice to meet you], Μαρία. [Τι κάνεις|how are you];\n— [Καλά|fine / well], [ευχαριστώ|thank you]. [Εσύ|and you];\n— [Πολύ καλά|very well]!",
     quiz:[
-      { q:"What is her name?", opts:["Sam","Ana","Sofía"], a:1, skill:"comprehension" },
-      { q:"What does «mucho gusto» mean?", opts:["nice to meet you","how are you","thank you very much"], a:0, skill:"courtesy" },
-      { q:"Ana says «¿Y tú?». What does it mean?", opts:["are you OK?","who are you?","and you?"], a:2, skill:"vocab-daily", explain:"<b>¿Y tú?</b> = and you? Toss it back after any answer." },
-      { q:"Type the Spanish for “thank you”:", opts:[], a:["gracias"], type:"fill", skill:"courtesy", explain:"<b>gracias</b> = thank you." }
+      { q:"What is her name?", opts:["Sam","Μαρία","Ελένη"], a:1, skill:"comprehension" },
+      { q:"What does «χάρηκα» mean?", opts:["nice to meet you","how are you","thank you very much"], a:0, skill:"courtesy" },
+      { q:"Sam asks «Τι κάνεις;». Sam wants to know…", opts:["her name","how she is","where she's from"], a:1, skill:"vocab-daily", explain:"<b>Τι κάνεις;</b> = how are you? (literally «what are you doing?»). Answer: <b>Καλά, ευχαριστώ!</b>" },
+      { q:"Type the Greek for “thank you”:", opts:[], a:["ευχαριστώ"], type:"fill", skill:"courtesy", explain:"<b>ευχαριστώ</b> = thank you. The stress is on the last syllable." }
     ]},
 
-  { id:"l0-aeropuerto", level:"L0", diff:2, titleEs:"¡Bienvenido a México!", titleEn:"Welcome to Mexico!",
-    text:"[El aeropuerto|the airport] de Cancún.\n— [Buenos días|good morning]. [Su pasaporte|your passport], [por favor|please].\n— [Aquí está|here it is].\n— ¿[Turismo|tourism]?\n— [Sí|yes]. [Una semana|one week].\n— ¡[Perfecto|perfect]! [Bienvenido|welcome] a México.\n— ¡[Gracias|thank you]!\n[Afuera|outside] [hay|there is / there are] [un taxi|a taxi].\n— ¿[Adónde|where to]?\n— [Al hotel|to the hotel] Sol, [por favor|please].\n— ¡[Perfecto|perfect]!",
+  { id:"l0-aerodromio", level:"L0", diff:2, titleGr:"Καλώς ήρθατε!", titleEn:"Welcome to Greece!",
+    text:"[Το αεροδρόμιο|the airport] [της Αθήνας|of Athens].\n— [Καλημέρα|good morning]. [Το διαβατήριο|the passport], [παρακαλώ|please / you're welcome].\n— [Ορίστε|here you go].\n— [Τουρισμός|tourism];\n— [Ναι|yes]. [Μία εβδομάδα|one week].\n— [Καλώς ήρθατε|welcome] [στην Ελλάδα|in / to Greece]!\n— [Ευχαριστώ|thank you]!\n[Έξω|outside] [έχει|there is / there are] [ταξί|taxi].\n— [Πού πάμε|where to];\n— [Στην Πλάκα|in / to Plaka], [παρακαλώ|please / you're welcome].",
     quiz:[
       { q:"What does the officer ask for?", opts:["your ticket","your passport","your hotel"], a:1, skill:"vocab-travel" },
       { q:"How long is your trip?", opts:["one week","one day","one month"], a:0, skill:"comprehension" },
-      { q:"Where do you ask the taxi to take you?", opts:["the airport","the beach","Hotel Sol"], a:2, skill:"vocab-travel" },
-      { q:"«Turismo» is a free word (a cognate). It means…", opts:["turtle","tourism","tour bus"], a:1, skill:"vocab-cognates", explain:"<b>turismo</b> = tourism. Say it at immigration and you're through." }
+      { q:"Where does the taxi take you?", opts:["back to the airport","to Plaka","to the port"], a:1, skill:"comprehension" },
+      { q:"«Τουρισμός» is a free word — English has it too. It means…", opts:["tourism","a tour bus","a tourist map"], a:0, skill:"vocab-cognates", explain:"<b>τουρισμός</b> = tourism. Lots of Greek is like this — English borrowed it." }
     ]},
 
-  { id:"l0-cafe", level:"L0", diff:3, titleEs:"Un café, por favor", titleEn:"A coffee, please",
-    text:"En [una cafetería|a coffee shop] de Oaxaca.\n— ¡[Buenos días|good morning]! ¿[Qué va a querer|what will you have]?\n— [Un café|a coffee], [por favor|please].\n— ¿[Grande|large] [o|or] [chico|small]?\n— [Chico|small], [por favor|please].\n— ¿[Algo más|anything else]?\n— No, [gracias|thank you].\n— [Aquí tiene|here you go].\n— ¡[Gracias|thank you]!\n— [De nada|you're welcome].\nMmm… ¡[delicioso|delicious]!",
+  { id:"l0-kafes", level:"L0", diff:3, titleGr:"Ένα φρέντο, παρακαλώ", titleEn:"An iced coffee, please",
+    text:"[Μια καφετέρια|a café] [στην Αθήνα|in Athens].\n— [Γεια σας|hello / goodbye (polite)]! [Τι θα πάρετε|what will you have];\n— [Ένα φρέντο εσπρέσο|an iced espresso (freddo)], [παρακαλώ|please / you're welcome].\n— [Σκέτο|no sugar], [μέτριο|medium sweet] [ή|or] [γλυκό|sweet];\n— [Μέτριο|medium sweet], [παρακαλώ|please / you're welcome].\n— [Κάτι άλλο|anything else];\n— [Όχι|no], [ευχαριστώ|thank you].\n— [Ορίστε|here you go].\n— [Ευχαριστώ|thank you]!\n— [Παρακαλώ|please / you're welcome].\nΜμμ… [τέλεια|perfect / great]!",
     quiz:[
-      { q:"What size coffee do you order?", opts:["large","small","medium"], a:1, skill:"comprehension" },
-      { q:"The barista asks «¿Algo más?». What does it mean?", opts:["anything else?","how much?","for here?"], a:0, skill:"vocab-daily" },
-      { q:"You say «gracias». The barista answers…", opts:["por favor","mucho gusto","de nada"], a:2, skill:"courtesy", explain:"<b>de nada</b> = you're welcome." },
-      { q:"Type the Spanish for “please”:", opts:[], a:["por favor"], type:"fill", skill:"courtesy", explain:"<b>por favor</b> = please." }
+      { q:"How sweet do you want your coffee?", opts:["no sugar","medium sweet","sweet"], a:1, skill:"comprehension" },
+      { q:"The waiter asks «Κάτι άλλο;». It means…", opts:["anything else?","how much?","for here?"], a:0, skill:"vocab-daily" },
+      { q:"You say «ευχαριστώ». The waiter answers «παρακαλώ». Here it means…", opts:["please","you're welcome","goodbye"], a:1, skill:"courtesy", trick:true, explain:"<b>παρακαλώ</b> does a lot of jobs: please, you're welcome, and «can I help you?» in shops. After a thank-you it's «you're welcome»." },
+      { q:"Type the Greek for “no”:", opts:[], a:["όχι"], type:"fill", skill:"vocab-daily", explain:"<b>όχι</b> = no. And yes is <b>ναι</b> — it sounds like «neh». Really!" }
     ]},
 
-  { id:"l0-numeros", level:"L0", diff:4, titleEs:"Uno, dos, tres… tacos", titleEn:"One, two, three… tacos",
-    text:"— ¡[Buenas noches|good evening]! ¿[Cuántos|how many]?\n— [Cinco tacos|five tacos], [por favor|please].\n— ¿Y [de tomar|to drink]?\n— [Un agua de jamaica|a hibiscus water].\nDoña Lupe [cuenta|counts]:\n[uno|one], [dos|two], [tres|three], [cuatro|four], [cinco|five].\n¡Mmm! ¡[Qué rico|how tasty]!\n— ¡[Otros cinco|five more], [por favor|please]!\n— ¡[Órale|OK / wow / come on]! [Seis|six], [siete|seven], [ocho|eight], [nueve|nine]… ¡[diez|ten]!",
+  { id:"l0-souvlaki", level:"L0", diff:4, titleGr:"Ένα, δύο, τρία… σουβλάκια", titleEn:"One, two, three… souvlaki",
+    text:"[Ένα σουβλατζίδικο|a souvlaki shop] [στο Μοναστηράκι|in Monastiraki].\n— [Καλησπέρα|good evening]! [Τι θα πάρετε|what will you have];\n— [Τρία σουβλάκια|three souvlaki] [με πίτα|in pita bread], [παρακαλώ|please / you're welcome].\n— [Τίποτα άλλο|nothing else? (= anything else?)];\n— [Και|and / also] [δύο μπύρες|two beers].\nΟ κύριος Γιώργος [μετράει|counts]: [ένα|one], [δύο|two], [τρία|three].\nΜμμ! [Πολύ νόστιμο|very tasty]!\n— [Άλλα δύο|two more], [παρακαλώ|please / you're welcome]!\n— [Μάλιστα|certainly]! [Τέσσερα|four], [πέντε|five]… [πέντε σουβλάκια|five souvlaki] [συνολικά|in total]!",
     quiz:[
-      { q:"How many tacos do you order first?", opts:["three","five","ten"], a:1, skill:"vocab-numbers" },
-      { q:"What do you drink?", opts:["a Coke","a coffee","a hibiscus water"], a:2, skill:"vocab-food", explain:"<b>agua de jamaica</b> = a sweet, cold hibiscus drink. Every taco stand has it." },
-      { q:"How many tacos do you eat in total?", opts:["ten","five","eight"], a:0, skill:"vocab-numbers", explain:"cinco + <b>otros cinco</b> (five more) = <b>diez</b>." },
-      { q:"Type the Spanish for “three”:", opts:[], a:["tres"], type:"fill", skill:"vocab-numbers", explain:"<b>tres</b> = three." }
+      { q:"How many souvlaki do you order first?", opts:["two","three","five"], a:1, skill:"vocab-numbers" },
+      { q:"What do you drink?", opts:["water","wine","beer"], a:2, skill:"vocab-food", explain:"<b>δύο μπύρες</b> = two beers. <b>η μπύρα</b> — μπ sounds like b." },
+      { q:"How many souvlaki in total?", opts:["five","three","ten"], a:0, skill:"vocab-numbers", explain:"<b>τρία</b> + <b>άλλα δύο</b> (two more) = <b>πέντε</b>." },
+      { q:"Type the Greek for “two”:", opts:[], a:["δύο","δυο"], type:"fill", skill:"vocab-numbers", explain:"<b>δύο</b> = two. The δ is a soft «th», like in «this»." }
     ]},
 
-  { id:"l0-bano", level:"L0", diff:5, titleEs:"¿Dónde está el baño?", titleEn:"Where's the bathroom?",
-    text:"— [Disculpe|excuse me]. ¿[Dónde está|where is] [el baño|the bathroom]?\n— [Al fondo|at the back], [a la derecha|to the right].\n— ¿[Aquí|here]?\n— No, [ahí|there].\n— ¡[Gracias|thank you]!\n[Hay|there is / there are] [dos puertas|two doors]: «H» [y|and] «M».\n«H» [es para|is for] [hombres|men].\n¡[Ojo|watch out]! «M» [es para|is for] [mujeres|women].",
+  { id:"l0-toualeta", level:"L0", diff:5, titleGr:"Πού είναι η τουαλέτα;", titleEn:"Where's the toilet?",
+    text:"— [Συγγνώμη|excuse me / sorry]. [Πού είναι|where is] [η τουαλέτα|the toilet];\n— [Εκεί|there], [δεξιά|right / on the right].\n— [Εδώ|here];\n— [Όχι|no], [εκεί|there]!\n— [Ευχαριστώ|thank you]!\n[Υπάρχουν|there are] [δύο πόρτες|two doors]: «ΑΝΔΡΩΝ» [και|and / also] «ΓΥΝΑΙΚΩΝ».\n«ΑΝΔΡΩΝ» [είναι για|is for] [τους άντρες|men].\n[Προσοχή|careful]! «ΓΥΝΑΙΚΩΝ» [είναι για|is for] [τις γυναίκες|women].\n[Στον τοίχο|on the wall]: «[Τα χαρτιά στο καλάθι|paper goes in the bin], [παρακαλώ|please / you're welcome]».",
     quiz:[
-      { q:"Where is the bathroom?", opts:["at the back, to the left","at the back, to the right","next to the door"], a:1, skill:"vocab-travel" },
-      { q:"You point and ask «¿Aquí?». What are you asking?", opts:["there?","now?","here?"], a:2, skill:"vocab-daily", explain:"<b>aquí</b> = here · <b>ahí</b> = there." },
-      { q:"Which door is for men?", opts:["«M»","«H»","both"], a:1, skill:"comprehension", trick:true, explain:"<b>H</b> = <b>hombres</b> (men). <b>M</b> = <b>mujeres</b> (women). The classic tourist mistake!" },
-      { q:"What do you say first to get someone's attention?", opts:["disculpe","de nada","mucho gusto"], a:0, skill:"courtesy", explain:"<b>disculpe</b> = excuse me." }
+      { q:"Where is the toilet?", opts:["over there, on the right","right here, on the left","upstairs"], a:0, skill:"vocab-travel" },
+      { q:"You point and ask «Εδώ;». You're asking…", opts:["there?","now?","here?"], a:2, skill:"vocab-daily", explain:"<b>εδώ</b> = here · <b>εκεί</b> = there." },
+      { q:"Which door is for women?", opts:["«ΑΝΔΡΩΝ»","«ΓΥΝΑΙΚΩΝ»","both"], a:1, skill:"comprehension", trick:true, explain:"<b>ΓΥΝΑΙΚΩΝ</b> = women's — think <i>gynaecologist</i>. <b>ΑΝΔΡΩΝ</b> = men's — think <i>android</i>. English borrowed both roots." },
+      { q:"The sign says «Τα χαρτιά στο καλάθι». What should you do?", opts:["flush the paper","put used paper in the bin","take a paper towel"], a:1, skill:"comprehension", explain:"Greek pipes are narrow: used toilet paper goes in the little bin, not down the toilet. Hotels too — everybody does it." }
     ]},
 
-  { id:"l0-no-entiendo", level:"L0", diff:6, titleEs:"Sí, no, no entiendo", titleEn:"Yes, no, I don't understand",
-    text:"[En el mercado|at the market]. [La señora|the lady] [habla|talks] [muy rápido|very fast].\n— ¿[Mande|pardon?]? [No entiendo|I don't understand]. [Más despacio|slower], [por favor|please].\n— ¿[Cuántos|how many]… [mangos|mangoes]?\n— Mmm… [no sé|I don't know]. ¿[Habla inglés|do you speak English]?\n— No, no. ¿[Tres|three]?\n— ¡[Sí|yes]! [Tres|three], [por favor|please]. ¡[Gracias|thank you]!",
+  { id:"l0-katalaveno", level:"L0", diff:6, titleGr:"Ναι, όχι, δεν καταλαβαίνω", titleEn:"Yes, no, I don't understand",
+    text:"[Στη λαϊκή|at the street market]. [Η κυρία|the lady] [μιλάει|talks] [πολύ γρήγορα|very fast].\n— [Συγγνώμη|excuse me / sorry], [δεν καταλαβαίνω|I don't understand]. [Πιο σιγά|slower], [παρακαλώ|please / you're welcome].\n— [Πόσα|how many]… [ροδάκινα|peaches];\n— Μμμ… [δεν ξέρω|I don't know]. [Μιλάτε αγγλικά|do you speak English];\n— [Λίγο|a little]… [Τρία|three];\n— [Ναι|yes]! [Τρία|three], [παρακαλώ|please / you're welcome]. [Ευχαριστώ|thank you]!",
     quiz:[
-      { q:"What's the problem at the market?", opts:["the mangoes are expensive","the lady talks very fast","the market is closed"], a:1, skill:"comprehension" },
-      { q:"«¿Mande?» is the polite Mexican way to say…", opts:["how much?","hello?","pardon?"], a:2, skill:"mexican", explain:"Mexicans say <b>¿mande?</b> when they didn't catch something. Much politer than «¿qué?»." },
-      { q:"How do you ask «Do you speak English?»", opts:["¿Habla inglés?","¿Mande?","¿Cuántos?"], a:0, skill:"phrases" },
-      { q:"Type the Spanish for “I don't understand”:", opts:[], a:["no entiendo"], type:"fill", skill:"phrases", explain:"<b>no entiendo</b> = I don't understand. Add <b>más despacio, por favor</b> and you're saved." }
+      { q:"What's the problem at the market?", opts:["the peaches are expensive","the lady talks very fast","the market is closed"], a:1, skill:"comprehension" },
+      { q:"What does «ναι» mean?", opts:["no","yes","maybe"], a:1, skill:"vocab-cognates", trick:true, explain:"<b>ναι</b> = YES. It sounds like «neh» (and a bit like «nay»), but it means yes. No is <b>όχι</b>." },
+      { q:"How do you ask «Do you speak English?»", opts:["Μιλάτε αγγλικά;","Δεν καταλαβαίνω.","Πόσα;"], a:0, skill:"phrases" },
+      { q:"Type the Greek for “I don't understand”:", opts:[], a:["δεν καταλαβαίνω"], type:"fill", skill:"phrases", explain:"<b>δεν καταλαβαίνω</b> = I don't understand. Add <b>πιο σιγά, παρακαλώ</b> (slower, please) and you're saved." }
     ]}
-
 ];
 
 const LESSONS_L0 = [
 
-  { id:"l0L-sonidos", level:"L0", diff:1, title:"Los sonidos", titleEn:"The sounds",
-    body:"Good news: Spanish is spelled the way it sounds. Learn these and you can read anything out loud.<br><br>• <b>Vowels never change:</b> a (ah), e (eh), i (ee), o (oh), u (oo). <b>taco</b> = TAH-koh.<br>• <b>h</b> is silent: <b>hola</b> = OH-lah.<br>• <b>j</b> is a breathy English h: <b>jugo</b> (juice) = HOO-goh.<br>• <b>ll</b> and <b>y</b> sound like English y: <b>pollo</b> (chicken) = POH-yoh, <b>yo</b> (I) = yoh.<br>• <b>ñ</b> = ny, like canyon: <b>mañana</b> (tomorrow) = mah-NYAH-nah.<br>• <b>rr</b> rolls, like a little purr: <b>burrito</b>.<br>• An accent mark shows where to push: <b>café</b> = kah-FEH.<br><br>💡 Pro tip: Don't sweat a perfect rr. Mexicans will understand you, and they'll love that you tried.",
+  { id:"l0L-alfavito1", level:"L0", diff:1, title:"Το αλφάβητο (1)", titleEn:"The alphabet, part 1: the friendly letters",
+    body:"Good news: you already know about half of the Greek alphabet — from English and from maths class. Learn these and you can read your first signs today.<br><br><b>Letters that look AND sound like English:</b><br>• Α α = a, as in «father»: <b>ταξί</b> = taxi<br>• Ε ε = e, as in «pet»: <b>μετρό</b> = metro<br>• Ι ι = i, as in «see»: <b>κιλό</b> = kilo<br>• Ο ο = o: <b>μόνο</b> = only<br>• Κ κ = k: <b>καφές</b> = coffee<br>• Μ μ = m: <b>μαμά</b> = mum<br>• Τ τ = t: <b>τένις</b> = tennis<br>• Ζ ζ = z: <b>ζέβρα</b> = zebra<br><br><b>Letters you know from maths:</b><br>• Π π (pi) = p: <b>πίτσα</b> = pizza<br>• Λ λ (lambda) = l: <b>λεμόνι</b> = lemon<br>• Σ σ ς (sigma) = s. At the end of a word it's written ς: <b>σαλάτα</b> = salad, <b>καφές</b><br>• Δ δ (delta) = a soft «th», as in «this»: <b>δέκα</b> = ten<br>• Θ θ (theta) = «th», as in «thin»: <b>θέατρο</b> = theatre<br>• Φ φ (phi) = f: <b>φέτα</b> = feta<br>• Ψ ψ (psi) = ps: <b>ψάρι</b> = fish<br>• Ξ ξ (xi) = x: <b>ταξί</b><br>• Ω ω (omega) = o, same as Ο: <b>ωραία</b> = lovely<br><br>💡 The little mark ´ shows which part to stress: <b>ταξί</b> = ta-XI, <b>μετρό</b> = me-TRO. Every word of two or more syllables has one.",
     practice:[
-      { q:"In Spanish, the letter h is…", opts:["silent","like English h","like English j"], a:0, skill:"pronunciation", explain:"<b>hola</b> = OH-lah. The h is silent." },
-      { q:"«pollo» (chicken) sounds like…", opts:["POH-loh","POL-low","POH-yoh"], a:2, skill:"pronunciation", explain:"<b>ll</b> sounds like English y." },
-      { q:"In «café», which part do you push?", opts:["the start: KAH-feh","the end: kah-FEH","neither, it's flat"], a:1, skill:"pronunciation", explain:"The accent mark on <b>é</b> shows where to push." },
-      { q:"Translate: «jugo»", opts:["chicken","juice","tomorrow"], a:1, skill:"translation" },
-      { q:"Translate into Spanish: «tomorrow»", opts:["pollo","yo","mañana"], a:2, skill:"translation", explain:"<b>mañana</b> = tomorrow (mah-NYAH-nah)." }
+      { q:"Read this sign: ΤΑΞΙ", opts:["taxi","tax","toxic"], a:0, skill:"alphabet", notr:true },
+      { q:"Read this word: μετρό", opts:["meter","metro","motor"], a:1, skill:"alphabet", notr:true },
+      { q:"Which letter makes the «p» sound?", opts:["Π","Ρ","Φ"], a:0, skill:"alphabet", notr:true, explain:"Π π is pi = p. Careful: Ρ looks like a P but it's an r (next lesson)." },
+      { q:"Read this word: πίτσα", opts:["pita","pizza","piste"], a:1, skill:"alphabet", notr:true, explain:"π = p, ί = i, τσ = ts, α = a: <b>πίτσα</b> = pizza. (Pita is <b>πίτα</b>.)" },
+      { q:"Type how «καφές» (coffee) sounds — Latin letters are fine:", opts:[], a:["καφές"], type:"fill", skill:"alphabet", notr:true, explain:"κ = k, α = a, φ = f, έ = e, ς = s: <b>καφές</b> = ka-FES." }
     ]},
 
-  { id:"l0L-gratis", level:"L0", diff:2, title:"Palabras gratis", titleEn:"Free words (cognates)",
-    body:"You already know hundreds of Spanish words. Most just need a new ending:<br>• <b>-tion → -ción</b>: información, estación (station)<br>• <b>-ity → -idad</b>: ciudad (city), universidad<br>• <b>-ous → -oso</b>: famoso, delicioso<br>• <b>-al</b> stays the same: hospital, normal<br>• <b>-ic → -ico / -ica</b>: fantástico, música<br><br>⚠️ <b>False friends</b> look familiar and lie:<br>• <b>embarazada</b> = pregnant (NOT embarrassed)<br>• <b>éxito</b> = success (NOT exit; the exit sign says <b>SALIDA</b>)<br>• <b>ropa</b> = clothes (NOT rope)<br><br>💡 Pro tip: Embarrassed in Mexico? Say <b>¡qué oso!</b> Literally «what a bear!»",
+  { id:"l0L-alfavito2", level:"L0", diff:2, title:"Το αλφάβητο (2)", titleEn:"The alphabet, part 2: the tricky letters",
+    body:"These look like English letters but LIE. Learn them and you can read everything.<br><br>• Ρ ρ = <b>r</b> (not p!): <b>Ρόδος</b> = Rhodes<br>• Η η = <b>i</b> (not h!): <b>νησί</b> = island<br>• Ν ν = <b>n</b> — small ν looks like a v: <b>νερό</b> = water<br>• Υ υ = <b>i</b> (not y): <b>μύθος</b> = myth<br>• Χ χ = a throaty <b>h</b> (not x!): <b>όχι</b> = no<br>• Β β = <b>v</b> (not b!): <b>βανίλια</b> = vanilla<br>• Γ γ = a soft g, and before e or i sounds it's a y: <b>γάλα</b> = milk, <b>γεια</b> = hi<br><br><b>Letter teams — two letters, one sound:</b><br>• ου = oo: <b>μουσική</b> = music<br>• αι = e: <b>και</b> = and<br>• ει and οι = i: <b>είναι</b> = is<br>• μπ = b: <b>μπύρα</b> = beer<br>• ντ = d: <b>ντομάτα</b> = tomato<br>• αυ / ευ = av / ev (or af / ef): <b>ευχαριστώ</b> = thank you<br><br>💡 And the strangest one: the Greek question mark is <b>;</b> — a semicolon. «Πού;» = Where?",
     practice:[
-      { q:"«Estación» means…", opts:["station","statue","state"], a:0, skill:"vocab-cognates" },
-      { q:"How do you say «city»?", opts:["universidad","hospital","ciudad"], a:2, skill:"vocab-cognates" },
-      { q:"Your friend says she is «embarazada». She is…", opts:["embarrassed","pregnant","hungry"], a:1, skill:"vocab-cognates", trick:true, explain:"<b>embarazada</b> = pregnant. For embarrassed, say <b>¡qué oso!</b>" },
-      { q:"Translate: «ropa»", opts:["rope","robe","clothes"], a:2, skill:"translation", explain:"<b>ropa</b> = clothes." },
-      { q:"Translate into Spanish: «exit»", opts:["salida","éxito","estación"], a:0, skill:"translation", explain:"<b>éxito</b> = success. The exit is <b>la salida</b>." }
+      { q:"The Greek letter Ρ sounds like…", opts:["p","r","b"], a:1, skill:"alphabet", notr:true, explain:"Ρ ρ = r. It's the one that fools everybody." },
+      { q:"Read this word: νερό (water)", opts:["vero","nero","hero"], a:1, skill:"alphabet", notr:true, explain:"Small ν is an n, not a v: <b>νερό</b> = ne-RO." },
+      { q:"Which spelling makes a «b» sound?", opts:["β","μπ","π"], a:1, skill:"alphabet", notr:true, explain:"β is v. For b, Greek writes μπ: <b>μπύρα</b> = beer." },
+      { q:"What does this sign say? ΜΠΥΡΑ", opts:["beer","mirror","pear"], a:0, skill:"alphabet", notr:true, explain:"ΜΠ = b, Υ = i, Ρ = r, Α = a → «bira»: <b>μπύρα</b>, beer." },
+      { q:"A Greek sentence ends with «;». It's…", opts:["a question","a list","a quote"], a:0, skill:"alphabet", notr:true, explain:"The Greek question mark looks like our semicolon. <b>Τι κάνεις;</b> = How are you?" }
     ]},
 
-  { id:"l0L-magicas", level:"L0", diff:3, title:"Palabras mágicas", titleEn:"Magic words",
-    body:"Three words that open every door:<br>• <b>por favor</b> = please<br>• <b>gracias</b> = thank you<br>• <b>de nada</b> = you're welcome<br><br>Three ways to say «sorry / excuse me»:<br>• <b>perdón</b> = sorry (oops, I bumped you)<br>• <b>disculpe</b> = excuse me (to get someone's attention)<br>• <b>con permiso</b> = excuse me (squeezing past)<br><br>Say hi by the clock:<br>• <b>buenos días</b> = good morning (until noon)<br>• <b>buenas tardes</b> = good afternoon (until dark)<br>• <b>buenas noches</b> = good evening / good night<br><br>💡 Pro tip: Didn't catch that? Say <b>¿mande?</b>, the polite Mexican «pardon?». A bare «¿qué?» can sound rude. And greet before you ask: «Buenas tardes… ¿dónde está el baño?»<br><br>💡 <b>usted</b> or <b>tú</b>? You don't have to choose: the polite chunks this app teaches (<b>¿Me da…?</b>, <b>Disculpe</b>, <b>¿Tiene…?</b>) are already the respectful <b>usted</b> form — right for waiters, drivers, pharmacists and anyone older. With new friends your own age you'll hear <b>tú</b> (<b>¿Tienes…?</b>, <b>Disculpa</b>). Being too polite with a friend is charming; being too casual with an official is the one that stings.",
+  { id:"l0L-dorean", level:"L0", diff:3, title:"Δωρεάν λέξεις", titleEn:"Free words — English is full of Greek",
+    body:"You already know hundreds of Greek words — English borrowed them. Read these out loud and you'll recognise them:<br>• <b>τηλέφωνο</b> = telephone<br>• <b>μουσική</b> = music<br>• <b>θέατρο</b> = theatre<br>• <b>μουσείο</b> = museum<br>• <b>φαρμακείο</b> = pharmacy (look for the green cross)<br>• <b>πρόβλημα</b> = problem<br>• <b>ιδέα</b> = idea<br>• <b>φωτογραφία</b> = photo<br>• <b>κέντρο</b> = centre<br>• <b>ΕΞΟΔΟΣ</b> = exit (think «exodus») · <b>ΕΙΣΟΔΟΣ</b> = entrance<br><br>⚠️ <b>The one trap everybody falls into:</b><br>• <b>ναι</b> = YES (it sounds like «neh»)<br>• <b>όχι</b> = no (it sounds a bit like «OK» — it isn't!)<br><br>💡 Greeks often nod UP for no, with a little click of the tongue. A nod down or a tilt of the head means yes.",
     practice:[
-      { q:"You need to squeeze past someone on the metro. You say…", opts:["perdón","con permiso","de nada"], a:1, skill:"courtesy", explain:"<b>con permiso</b> = excuse me (passing)." },
-      { q:"It's 3 p.m. You walk into a shop and say…", opts:["buenos días","buenas noches","buenas tardes"], a:2, skill:"courtesy", explain:"<b>buenas tardes</b> runs from noon until dark." },
-      { q:"You didn't hear the waiter. The polite Mexican way to say «pardon?» is…", opts:["¿mande?","¿qué?","¿cómo estás?"], a:0, skill:"mexican", explain:"<b>¿mande?</b> is polite. A bare «¿qué?» can sound rude." },
-      { q:"Translate: «de nada»", opts:["you're welcome","thank you","please"], a:0, skill:"translation" },
-      { q:"Translate into Spanish: «excuse me» (to call the waiter)", opts:["con permiso","disculpe","perdón"], a:1, skill:"translation", explain:"<b>disculpe</b> gets someone's attention. <b>con permiso</b> is for squeezing past." }
+      { q:"«Φαρμακείο» means…", opts:["a farm","a pharmacy","a market"], a:1, skill:"vocab-cognates" },
+      { q:"The sign over the door says ΕΞΟΔΟΣ. That's…", opts:["the exit","the entrance","the toilet"], a:0, skill:"vocab-cognates", explain:"<b>έξοδος</b> = exit — like «exodus». The entrance is <b>είσοδος</b>." },
+      { q:"«Πρόβλημα» means…", opts:["programme","problem","profile"], a:1, skill:"vocab-cognates" },
+      { q:"Your Greek friend says «όχι». She means…", opts:["OK","no","yes"], a:1, skill:"vocab-cognates", trick:true, explain:"<b>όχι</b> = no, even though it sounds a bit like «OK». Yes is <b>ναι</b>." },
+      { q:"Translate into Greek: «music»", opts:["μουσείο","μουσική","μύθος"], a:1, skill:"translation", explain:"<b>μουσική</b> = music. <b>μουσείο</b> = museum, <b>μύθος</b> = myth." }
     ]},
 
-  { id:"l0L-numeros", level:"L0", diff:4, title:"Números 0–20", titleEn:"Numbers 0–20",
-    body:"<b>0–10:</b> cero, uno, dos, tres, cuatro, cinco, seis, siete, ocho, nueve, diez<br><br><b>11–15</b> have their own names. Spot the <b>-ce</b> ending:<br>• once (11), doce (12), trece (13), catorce (14), quince (15)<br><br><b>16–19</b> are «ten and…» squished into one word, <b>dieci-</b> + the number:<br>• dieciséis (16), diecisiete (17), dieciocho (18), diecinueve (19)<br><br><b>20</b> = veinte<br><br>💡 Pro tip: Hold up fingers while you say the number. «Tres, por favor» + three fingers = no surprise plate of ten tacos. Before a thing, <b>uno</b> shrinks to <b>un</b> or <b>una</b>: un taco, una torta.",
+  { id:"l0L-magikes", level:"L0", diff:4, title:"Μαγικές λέξεις", titleEn:"Magic words",
+    body:"Three words that open every door:<br>• <b>παρακαλώ</b> = please — and also «you're welcome», and «can I help you?» in shops<br>• <b>ευχαριστώ</b> = thank you · <b>ευχαριστώ πολύ</b> = thank you very much<br>• <b>συγγνώμη</b> = sorry / excuse me<br><br>Hello and goodbye:<br>• <b>γεια σου</b> = hi / bye, to one friend<br>• <b>γεια σας</b> = hello / goodbye, polite — or to a group<br>• <b>καλημέρα</b> = good morning (until early afternoon)<br>• <b>καλησπέρα</b> = good evening (from late afternoon)<br>• <b>καληνύχτα</b> = good night (only when leaving or going to bed)<br><br>💡 <b>σου</b> or <b>σας</b>? Use <b>γεια σας</b> with a shopkeeper, a waiter, anyone older, or a group; <b>γεια σου</b> with a friend or a kid. The phrases this app teaches for shops and taxis (<b>Έχετε…;</b>, <b>Μιλάτε αγγλικά;</b>) are already the polite form.",
     practice:[
-      { q:"What number is «quince»?", opts:["5","15","50"], a:1, skill:"vocab-numbers" },
-      { q:"How do you say 12?", opts:["doce","dos","diez"], a:0, skill:"vocab-numbers", explain:"<b>doce</b> = 12 · <b>dos</b> = 2 · <b>diez</b> = 10." },
-      { q:"«Dieciocho» is…", opts:["8","80","18"], a:2, skill:"vocab-numbers", explain:"dieci + ocho = ten and eight = <b>18</b>." },
-      { q:"Translate: «tres tacos»", opts:["ten tacos","three tacos","two tacos"], a:1, skill:"translation" },
-      { q:"Type the number 20 in Spanish:", opts:[], a:["veinte"], type:"fill", skill:"translation", explain:"<b>veinte</b> = 20." }
+      { q:"You walk into a shop at 10 a.m. You say…", opts:["καλημέρα","καληνύχτα","καλησπέρα"], a:0, skill:"courtesy" },
+      { q:"You're leaving a taverna at 11 p.m. to go to bed. You say…", opts:["καλημέρα","καληνύχτα","χάρηκα"], a:1, skill:"courtesy", explain:"<b>καληνύχτα</b> is for leaving at night. Arriving in the evening, it's <b>καλησπέρα</b>." },
+      { q:"You greet an older shopkeeper. You say…", opts:["γεια σου","γεια σας","γεια μας"], a:1, skill:"courtesy", explain:"<b>γεια σας</b> is the polite one. <b>γεια μας</b> means «cheers!» — save it for the drinks." },
+      { q:"Translate: «συγγνώμη»", opts:["sorry / excuse me","thank you","please"], a:0, skill:"translation" },
+      { q:"Type the Greek for “please”:", opts:[], a:["παρακαλώ"], type:"fill", skill:"translation", explain:"<b>παρακαλώ</b> = please (and you're welcome)." }
+    ]},
+
+  { id:"l0L-arithmoi", level:"L0", diff:5, title:"Αριθμοί 0–10", titleEn:"Numbers 0–10",
+    body:"<b>μηδέν</b> 0 · <b>ένα</b> 1 · <b>δύο</b> 2 · <b>τρία</b> 3 · <b>τέσσερα</b> 4 · <b>πέντε</b> 5 · <b>έξι</b> 6 · <b>επτά</b> 7 · <b>οκτώ</b> 8 · <b>εννιά</b> 9 · <b>δέκα</b> 10<br><br>You'll also hear <b>εφτά</b> for 7, <b>οχτώ</b> for 8 and <b>εννέα</b> for 9 — same numbers, both are fine.<br><br>💡 «One» changes with the thing: <b>ένας καφές</b> (a coffee), <b>μία μπύρα</b> (a beer), <b>ένα νερό</b> (a water). Three and four do it too: <b>τρεις μπύρες</b>, <b>τρία νερά</b>. Mix them up and people still understand — hold up fingers and smile.",
+    practice:[
+      { q:"What number is «πέντε»?", opts:["5","15","50"], a:0, skill:"vocab-numbers" },
+      { q:"How do you say 8?", opts:["οκτώ","έξι","δέκα"], a:0, skill:"vocab-numbers" },
+      { q:"«Εννιά» is…", opts:["7","9","10"], a:1, skill:"vocab-numbers" },
+      { q:"Translate: «δύο νερά»", opts:["two waters","ten waters","two wines"], a:0, skill:"translation" },
+      { q:"Type the number 10 in Greek:", opts:[], a:["δέκα"], type:"fill", skill:"vocab-numbers", explain:"<b>δέκα</b> = 10 — like «decade»." }
     ]}
 
 ];
 
 /* ============================================================================
-   L1
+   L1 — First steps (survival)
    ========================================================================== */
-/* LEVEL L1 — Sobrevivir · Survival */
 const STORIES_L1 = [
 
-  { id:"l1-tacos", level:"L1", diff:1, titleEs:"Tacos al pastor", titleEn:"Pastor tacos",
-    text:"[Son las diez de la noche|it's ten at night] en CDMX. Doña Lupe [tiene|has] [un puesto|a stand] de tacos en [la esquina|the corner].\n— ¡[Buenas noches|good evening]! ¿[Qué va a querer|what will you have]?\n— ¿[Me da|can I have] [tres tacos|three tacos] de pastor, [por favor|please]?\n— ¿[Con todo|with everything]?\n— Sí, con todo.\nDoña Lupe [pone|puts on] [la cebolla|the onion] y [el cilantro|the cilantro].\n— ¿[La salsa verde|the green salsa] [pica|is spicy]?\n— [Poquito|a little]. [La roja|the red one] [pica más|is spicier].\n— ¡Perfecto! Y [un refresco|a soda], por favor.\n— [Aquí tiene|here you go].\n— ¿[Cuánto es|how much is it (total)]?\n— [Ochenta pesos|eighty pesos].",
+  { id:"l1-taverna", level:"L1", diff:1, titleGr:"Στην ταβέρνα", titleEn:"At the taverna",
+    text:"[Μια ταβέρνα|a taverna] [στην Πλάκα|in / to Plaka]. [Ο σερβιτόρος|the waiter] [έρχεται|comes over].\n— [Καλησπέρα|good evening]! [Ο κατάλογος|the menu].\n— [Ευχαριστούμε|thank you (from us)]. [Θα θέλαμε|we'd like] [μια χωριάτικη|a Greek salad], [ένα τζατζίκι|a tzatziki] [και|and / also] [έναν μουσακά|a moussaka].\n— [Ωραία|nice / lovely]. [Και|and / also] [για να πιείτε|to drink];\n— [Μισό κιλό|half a kilo] [λευκό κρασί|white wine], [παρακαλώ|please / you're welcome].\n— [Αμέσως|right away]!\n[Μετά από λίγο|a little later]:\n— [Καλή όρεξη|enjoy your meal]!\n— [Γεια μας|cheers]!",
     quiz:[
-      { q:"What do you order?", opts:["two tacos and a water","three tacos and a soda","three quesadillas and a juice"], a:1, skill:"vocab-food", explain:"<b>tres tacos</b> = three tacos, <b>un refresco</b> = a soda." },
-      { q:"You say «con todo». What does Doña Lupe put on your tacos?", opts:["cheese and cream","only salsa","onion and cilantro"], a:2, skill:"mexican", explain:"At a taco stand, <b>con todo</b> (with everything) means onion and cilantro." },
-      { q:"Which salsa is spicier?", opts:["the red one","the green one","neither, both are mild"], a:0, skill:"comprehension", explain:"<b>La roja pica más</b> = the red one is spicier. The green one? <b>Poquito</b> (a little)." },
-      { q:"Type the Spanish for “can I have” (to order):", opts:[], a:["me da"], type:"fill", skill:"phrases", explain:"<b>¿Me da…?</b> = can I have…? It's the everyday way to order in Mexico." }
+      { q:"How do you order the house wine?", opts:["by the glass","by the kilo","by the bottle"], a:1, skill:"comprehension", trick:true, explain:"House wine comes in a metal jug, ordered by weight: <b>μισό κιλό</b> is about half a litre. Very normal — and usually good." },
+      { q:"What does «Καλή όρεξη!» mean?", opts:["cheers!","enjoy your meal!","good night!"], a:1, skill:"vocab-food" },
+      { q:"«Χωριάτικη» is…", opts:["a Greek salad","a cheese pie","a grilled fish"], a:0, skill:"vocab-food", explain:"<b>χωριάτικη</b> (village salad): tomato, cucumber, onion, olives and a slab of feta on top." },
+      { q:"Type the Greek for “cheers!”:", opts:[], a:["γεια μας","στην υγειά μας"], type:"fill", skill:"greek-life", explain:"<b>Γεια μας!</b> = cheers! (literally «our health»). Look people in the eye when you clink." }
     ]},
 
-  { id:"l1-taxi", level:"L1", diff:2, titleEs:"El taxi de Don Beto", titleEn:"Don Beto's taxi",
-    text:"[Estás|you are] en Playa del Carmen, en el taxi de Don Beto.\n— [Buenas tardes|good afternoon]. ¿[A dónde vamos|where are we going]?\n— [Al hotel|to the hotel] Sol, [por favor|please].\n— ¡[Órale|OK / wow / come on]! ¿Es [su primera vez|your first time] en Playa del Carmen?\n— [Perdón|sorry]… ¡[más despacio|slower], por favor!\nDon Beto [se ríe|laughs] y [maneja|drives] más despacio.\n[Miras|you look at] [el mapa|the map] en [el celular|the cell phone].\n— [Aquí|here], [a la izquierda|to the left]. [Luego|then] [derecho|straight ahead].\n— ¿Y el hotel?\n— [En la esquina|on the corner], [a la derecha|to the right]. ¡[Aquí está bien|here is fine]!\n— ¿[Cuánto es|how much is it (total)]?\n— [Cien pesos|a hundred pesos].\n— [Aquí tiene|here you go]. ¡[Gracias|thank you]!",
+  { id:"l1-periptero", level:"L1", diff:2, titleGr:"Στο περίπτερο", titleEn:"At the kiosk",
+    text:"[Το περίπτερο|the kiosk] [είναι|is / are] [παντού|everywhere] [στην Ελλάδα|in / to Greece].\n— [Γεια σας|hello / goodbye (polite)]! [Ένα νερό|a (bottle of) water], [παρακαλώ|please / you're welcome].\n— [Μικρό|small] [ή|or] [μεγάλο|big];\n— [Μεγάλο|big]. [Έχετε|do you have] [αντηλιακό|sunscreen];\n— [Όχι|no], [δεν έχουμε|we don't have it]. [Το σούπερ μάρκετ|the supermarket] [είναι|is / are] [εκεί|there].\n— [Εντάξει|OK]. [Πόσο κάνει|how much is it];\n— [Ένα ευρώ|one euro].\n— [Ορίστε|here you go].\n— [Ευχαριστώ|thank you], [γεια σας|hello / goodbye (polite)]!",
     quiz:[
-      { q:"Where do you ask Don Beto to take you?", opts:["to the airport","to the Hotel Sol","to the market"], a:1, skill:"comprehension", explain:"<b>Al hotel Sol, por favor</b> = to the Hotel Sol, please." },
-      { q:"You say «¡Más despacio, por favor!». What does Don Beto do?", opts:["He drives slower","He speaks in English","He stops the taxi"], a:0, skill:"comprehension", trick:true, explain:"<b>Más despacio</b> = slower. You meant «talk slower», but Don Beto laughs and slows the taxi down. 😄" },
-      { q:"What does «derecho» mean?", opts:["to the right","to the left","straight ahead"], a:2, skill:"vocab-travel", trick:true, explain:"Careful: <b>derecho</b> = straight ahead. <b>A la derecha</b> = to the right." },
-      { q:"Type the Spanish for “here is fine” (to stop the taxi):", opts:[], a:["aquí está bien"], type:"fill", skill:"phrases", explain:"<b>Aquí está bien</b> = here is fine. Say it and the driver pulls over." }
+      { q:"What do you buy at the kiosk?", opts:["a big water","a small water","sunscreen"], a:0, skill:"comprehension" },
+      { q:"Why don't you get sunscreen there?", opts:["it's too expensive","they don't have it","the kiosk is closed"], a:1, skill:"comprehension" },
+      { q:"«Πόσο κάνει;» means…", opts:["how much is it?","how big is it?","where is it?"], a:0, skill:"phrases" },
+      { q:"Type the Greek for “OK”:", opts:[], a:["εντάξει"], type:"fill", skill:"vocab-daily", explain:"<b>εντάξει</b> = OK. Greeks say it all day long." }
     ]},
 
-  { id:"l1-hotel", level:"L1", diff:3, titleEs:"En la recepción", titleEn:"Checking in",
-    text:"[Llegas|you arrive] al Hotel Sol, en Playa del Carmen. Sofía está en [la recepción|the front desk].\n— ¡Hola, buenas tardes! ¿[En qué le puedo ayudar|how can I help you]?\n— [Buenas tardes|good afternoon]. [Tengo una reservación|I have a reservation].\n— ¿[A nombre de|under the name of] [quién|who]?\n— A nombre de Sam Brown.\n— Perfecto. [Su habitación|your room] es la [doce|twelve]. [Aquí está|here is] [la llave|the key].\n— Gracias. ¿Y [el wifi|the wifi]? ¿[Cuál es|what is] [la contraseña|the password]?\n— Es «playasol», [todo junto|all one word].\n— ¿[A qué hora|at what time] es [el desayuno|the breakfast]?\n— [De siete a diez|from seven to ten], en el restaurante. Y está [incluido|included].\n— ¡[Qué padre|how cool]! [Gracias|thank you].\n— [De nada|you're welcome]. ¡[Que descanse|rest well]!",
+  { id:"l1-taxi", level:"L1", diff:3, titleGr:"Το ταξί", titleEn:"The taxi",
+    text:"— [Καλημέρα|good morning]. [Στον Πειραιά|to Piraeus], [στο λιμάνι|at / to the port], [παρακαλώ|please / you're welcome].\n— [Ποια πύλη|which gate];\n— [Δεν ξέρω|I don't know]… [Το πλοίο|the ferry] [για Νάξο|to Naxos].\n— [Εντάξει|OK], [ξέρω|I know]. [Πάμε|let's go]!\n[Μισή ώρα|half an hour] [αργότερα|later]:\n— [Φτάσαμε|we're here]. [Τριάντα ευρώ|thirty euros].\n— [Με κάρτα|by card];\n— [Ναι|yes], [βεβαίως|of course].\n— [Ευχαριστώ|thank you]!\n— [Καλό ταξίδι|have a good trip]!",
     quiz:[
-      { q:"What's the first thing you tell Sofía?", opts:["I need a taxi","Where is the bathroom?","I have a reservation"], a:2, skill:"phrases", explain:"<b>Tengo una reservación</b> = I have a reservation." },
-      { q:"What is your room number?", opts:["two","twelve","ten"], a:1, skill:"vocab-numbers", explain:"<b>doce</b> = twelve." },
-      { q:"When is breakfast, and do you pay extra?", opts:["7 to 10, and it's included","7 to 10, and it costs extra","10 to 12, and it's included"], a:0, skill:"comprehension", explain:"<b>De siete a diez</b> (from seven to ten), and it's <b>incluido</b> (included). ¡Qué padre!" },
-      { q:"Type the Spanish for “the password”:", opts:[], a:["la contraseña","contraseña"], type:"fill", skill:"vocab-travel", explain:"<b>la contraseña</b> = the password. Ask: ¿Cuál es la contraseña del wifi?" }
+      { q:"Where are you going?", opts:["the airport","the port of Piraeus","Plaka"], a:1, skill:"vocab-travel" },
+      { q:"The driver asks «Ποια πύλη;». He wants to know…", opts:["which gate","which hotel","which day"], a:0, skill:"questions" },
+      { q:"How much is the ride?", opts:["€13","€30","€3"], a:1, skill:"vocab-numbers", explain:"<b>τριάντα</b> = 30. (13 is <b>δεκατρία</b>.)" },
+      { q:"How do you pay?", opts:["cash","by card","you don't pay"], a:1, skill:"comprehension" }
     ]},
 
-  { id:"l1-oxxo", level:"L1", diff:4, titleEs:"En el OXXO", titleEn:"At the OXXO",
-    text:"[Hace mucho calor|it's very hot] en Mérida. [Entras a|you go into] [un OXXO|an OXXO (corner store)] y [tomas|you grab] [dos aguas|two (bottles of) water] y [unas papas|some chips].\n— Buenas tardes. ¿[Algo más|anything else]?\n— Sí, [una bolsa|a bag], [por favor|please].\n— Son [cuarenta y nueve cincuenta|forty-nine fifty]. ¿[En efectivo|in cash] o [con tarjeta|by card]?\n— En efectivo. [Aquí tiene|here you go] [cien|a hundred].\n— ¿[Gusta redondear|would you like to round up]?\n— Mmm… sí, ¿[por qué no|why not]?\n[La cajera|the cashier] [te da|gives you] [el cambio|the change]: [cincuenta pesos|fifty pesos].\n— ¡[Gracias|thank you]! [Hasta luego|see you later].",
+  { id:"l1-xenodoxeio", level:"L1", diff:4, titleGr:"Στο ξενοδοχείο", titleEn:"At the hotel",
+    text:"[Στη Νάξο|in / to Naxos]. [Το ξενοδοχείο|the hotel] «Ήλιος».\n— [Καλησπέρα|good evening]. [Έχω|I have] [μια κράτηση|a booking]. [Με λένε|my name is] Sam Brown.\n— [Μάλιστα|certainly]… [Ένα δίκλινο|a double room], [τρεις νύχτες|three nights]. [Το διαβατήριό σας|your passport], [παρακαλώ|please / you're welcome].\n— [Ορίστε|here you go].\n— [Ευχαριστώ|thank you]. [Το δωμάτιο|the room] [είναι|is / are] [το δώδεκα|number twelve].\n— [Τι ώρα|what time] [είναι|is / are] [το πρωινό|breakfast];\n— [Από τις οκτώ|from eight] [μέχρι τις δέκα|until ten].\n— [Και|and / also] το Wi-Fi;\n— [Ο κωδικός|the password] [είναι|is / are] [στο δωμάτιο|in the room]. [Καλή διαμονή|enjoy your stay]!",
     quiz:[
-      { q:"What do you grab in the OXXO?", opts:["a coffee and a sandwich","a soda and some candy","two waters and some chips"], a:2, skill:"vocab-food", explain:"<b>dos aguas</b> = two (bottles of) water, <b>unas papas</b> = some chips." },
-      { q:"The cashier asks «¿En efectivo o con tarjeta?». What is she asking?", opts:["Here or to go?","Cash or card?","Bag or no bag?"], a:1, skill:"vocab-daily", explain:"<b>en efectivo</b> = in cash, <b>con tarjeta</b> = by card." },
-      { q:"At OXXO, what does «¿Gusta redondear?» mean?", opts:["Would you like to round up (for charity)?","Would you like a receipt?","Would you like a bag?"], a:0, skill:"mexican", explain:"OXXO cashiers ask this all the time: round your total up to the next peso, and the extra centavos go to charity." },
-      { q:"You pay with 100 pesos. How much change do you get?", opts:["forty-nine pesos","a hundred pesos","fifty pesos"], a:2, skill:"vocab-numbers", trick:true, explain:"The total was 49.50, but you said sí to <b>redondear</b>, so it became 50. Your change: <b>cincuenta pesos</b>." }
+      { q:"How many nights are you staying?", opts:["two","three","twelve"], a:1, skill:"comprehension" },
+      { q:"What's your room number?", opts:["10","12","8"], a:1, skill:"vocab-numbers", explain:"<b>δώδεκα</b> = 12 (think «dodecagon», a 12-sided shape)." },
+      { q:"When is breakfast?", opts:["from 8 to 10","from 10 to 12","from 7 to 8"], a:0, skill:"vocab-numbers" },
+      { q:"«Καλή διαμονή!» means…", opts:["enjoy your stay!","good night!","see you tomorrow!"], a:0, skill:"courtesy" }
     ]},
 
-  { id:"l1-farmacia", level:"L1", diff:5, titleEs:"En la farmacia", titleEn:"At the pharmacy",
-    text:"[Pasas todo el día|you spend all day] en [la playa|the beach] de Tulum. ¡Mucho sol! [Ahora|now] [entras a|you go into] [la farmacia|the pharmacy].\n— [Buenas tardes|good afternoon]. ¿[En qué le puedo ayudar|how can I help you]?\n— [Me duele la cabeza|my head hurts]. [Necesito|I need] [algo para|something for] [el dolor|the pain]. ¿[Tiene|do you have] [paracetamol|acetaminophen]?\n— [Sí|yes], [claro|of course]. ¿[Una caja|a box]?\n— Sí, [por favor|please]. ¿[Cada cuánto|how often]?\n— Una [cada ocho horas|every eight hours], [con comida|with food]. Y [tome mucha agua|drink lots of water].\n— Gracias. Y… [me duele el estómago|my stomach hurts]. ¡[Comí|I ate] muchos tacos!\n— Ja, ja. Para el estómago, [un suero|an electrolyte drink]. Es muy bueno con [el calor|the heat].\n— Perfecto. ¿[Cuánto es|how much is it (total)]?\n— [Ciento veinte pesos|a hundred twenty pesos].",
+  { id:"l1-farmakeio", level:"L1", diff:5, titleGr:"Στο φαρμακείο", titleEn:"At the pharmacy",
+    text:"[Ο ήλιος|the sun] [καίει|burns]! [Στο φαρμακείο|at the pharmacy]:\n— [Καλημέρα|good morning]. [Κάηκα|I got burnt] [από τον ήλιο|by the sun]. [Έχετε|do you have] [κάτι|something];\n— [Ναι|yes], [αυτή την κρέμα|this cream]. [Δύο φορές|twice] [την ημέρα|a day].\n— [Έχω|I have] [και|and / also] [πονοκέφαλο|a headache]. [Έχετε|do you have] [παρακεταμόλη|paracetamol];\n— [Βεβαίως|of course].\n— [Πόσο κάνουν|how much are] [όλα μαζί|altogether];\n— [Δεκαπέντε ευρώ|fifteen euros].\n— [Ευχαριστώ πολύ|thank you very much]!\n— [Περαστικά|get well soon]!",
     quiz:[
-      { q:"What hurts first?", opts:["your stomach","your head","your back"], a:1, skill:"comprehension", explain:"<b>Me duele la cabeza</b> = my head hurts." },
-      { q:"How often do you take the paracetamol?", opts:["every two hours","once a day","every eight hours"], a:2, skill:"vocab-numbers", explain:"<b>Una cada ocho horas</b> = one every eight hours. Ask for medicine <b>by name</b> — <b>¿Tiene paracetamol?</b> — instead of accepting unnamed pills over the counter." },
-      { q:"What does the pharmacist give you for your stomach?", opts:["an electrolyte drink (suero)","a soda","more tacos"], a:0, skill:"mexican", explain:"<b>Suero</b> (an electrolyte drink) is sold in every Mexican pharmacy and OXXO. Locals swear by it for heat and upset stomachs." },
-      { q:"Type the Spanish for “I need”:", opts:[], a:["necesito"], type:"fill", skill:"phrases", explain:"<b>Necesito algo para…</b> = I need something for… Swap in the problem." }
+      { q:"Why do you go to the pharmacy?", opts:["sunburn and a headache","a cough","a mosquito bite"], a:0, skill:"comprehension" },
+      { q:"How often do you use the cream?", opts:["once a day","twice a day","every hour"], a:1, skill:"comprehension" },
+      { q:"The pharmacist says «Περαστικά!». It means…", opts:["get well soon!","next, please!","see you!"], a:0, skill:"courtesy", explain:"<b>Περαστικά!</b> = get well soon — say it to anyone who's ill." },
+      { q:"Type the Greek for “do you have…?” (polite):", opts:[], a:["έχετε"], type:"fill", skill:"phrases", explain:"<b>Έχετε…;</b> — swap any noun in: <b>Έχετε νερό;</b> <b>Έχετε αντηλιακό;</b> Ask for medicine by its name, like here." }
     ]},
 
-  { id:"l1-perdido", level:"L1", diff:6, titleEs:"Perdido en el centro", titleEn:"Lost downtown",
-    text:"[Estás|you are] en [el centro|downtown] de Oaxaca. [Buscas|you're looking for] [el Zócalo|the main square].\n— [Disculpe|excuse me]. ¿[Dónde está|where is] el Zócalo?\n— ¿[Mande|pardon?]?\n— [Perdón|sorry]… ¿dónde está el Zócalo?\n— ¡Ah! Está [a dos cuadras|two blocks away]. [Siga|keep going] [derecho|straight ahead] y [en la esquina|on the corner], [a la izquierda|to the left].\n— ¿Está [lejos|far]?\n— No, está muy [cerca|near]. [Cinco minutos|five minutes] [caminando|on foot].\n— ¡[Muchas gracias|thank you very much]!\n— [De nada|you're welcome]. ¡Y [pruebe|try] [el mole|the mole]!\n[Caminas|you walk] dos cuadras… y [ahí está|there it is]: [la catedral|the cathedral], [la música|the music] ¡y [mucha gente|lots of people]!",
+  { id:"l1-logariasmos", level:"L1", diff:6, titleGr:"Τον λογαριασμό, παρακαλώ", titleEn:"The bill, please",
+    text:"[Μετά το φαγητό|after the meal]:\n— [Συγγνώμη|excuse me / sorry]! [Τον λογαριασμό|the bill], [παρακαλώ|please / you're welcome].\n— [Αμέσως|right away]! [Και|and / also] [ένα γλυκό|a dessert] — [κέρασμα|on the house]!\n— [Τέλεια|perfect / great]! [Ευχαριστούμε|thank you (from us)]!\n[Ο λογαριασμός|the bill]: [σαράντα έξι ευρώ|forty-six euros]. [Δίνεις|you hand over] [πενήντα|fifty].\n— [Κρατήστε τα ρέστα|keep the change].\n— [Να είστε καλά|thank you, be well]! [Καληνύχτα|good night]!",
     quiz:[
-      { q:"What are you looking for?", opts:["the bus station","the main square (el Zócalo)","the market"], a:1, skill:"comprehension", explain:"<b>el Zócalo</b> = the main square." },
-      { q:"The woman didn't hear you. What does she say?", opts:["¡Órale!","¡Qué padre!","¿Mande?"], a:2, skill:"mexican", explain:"<b>¿Mande?</b> = pardon? It's the polite, very Mexican way to say «what?»." },
-      { q:"How far is the Zócalo?", opts:["two blocks, so it's near","twenty blocks, so it's far","two kilometers"], a:0, skill:"vocab-travel", explain:"<b>A dos cuadras</b> = two blocks away. <b>Cerca</b> = near." },
-      { q:"At the corner, which way do you turn?", opts:["right","left","you don't turn"], a:1, skill:"vocab-travel", explain:"<b>En la esquina, a la izquierda</b> = on the corner, to the left." }
+      { q:"What does the waiter bring for free?", opts:["a coffee","a dessert","a bottle of wine"], a:1, skill:"comprehension", explain:"<b>κέρασμα</b> = a treat on the house. Very common after a meal in Greece — enjoy it." },
+      { q:"How much is the bill?", opts:["€46","€50","€64"], a:0, skill:"vocab-numbers", explain:"<b>σαράντα έξι</b> = forty + six = 46." },
+      { q:"How much do you leave as a tip?", opts:["nothing","€4","€10"], a:1, skill:"vocab-numbers", trick:true, explain:"You hand over <b>πενήντα</b> (50) for a bill of 46 and say «keep the change» — that's a €4 tip, a normal 5–10%." },
+      { q:"Type the Greek for “the bill” (as in «the bill, please»):", opts:[], a:["τον λογαριασμό","λογαριασμό","ο λογαριασμός","λογαριασμός"], type:"fill", skill:"phrases", explain:"<b>Τον λογαριασμό, παρακαλώ.</b> The bill won't come until you ask — rushing you would be rude." }
     ]}
 ];
 
 const LESSONS_L1 = [
 
-  { id:"l1L-quiero", level:"L1", diff:1, title:"Quiero… / ¿Me da…?", titleEn:"Ordering anything",
-    body:"Two chunks will feed you for the whole trip. Learn them once, then just swap the noun.<br><br><b>Quiero…</b> = I want…<br><b>¿Me da…?</b> = can I have…?<br>Add <b>por favor</b> and you're golden.<br><br>• <b>Quiero un café, por favor.</b> = I want a coffee, please.<br>• <b>¿Me da dos tacos, por favor?</b> = can I have two tacos, please?<br>• <b>¿Me da la cuenta?</b> = can I have the check?<br>• <b>Quiero agua, por favor.</b> = I want water, please.<br>• <b>¿Me da una bolsa?</b> = can I have a bag?<br>• <b>Quiero una cerveza.</b> = I want a beer.<br><br>💡 <b>Pro tip:</b> in Mexico, <b>¿Me da…?</b> is the everyday way to order: taco stands, OXXO, bakeries, everywhere. It sounds friendly, not pushy. (Spain says «me pone». Skip that one here.)",
+  { id:"l1L-thelo", level:"L1", diff:1, title:"Θα ήθελα…", titleEn:"Asking for things",
+    body:"Learn the chunk, swap the noun:<br>• <b>Θα ήθελα</b> ___ = I'd like ___ (polite — use this one)<br>• <b>Θέλω</b> ___ = I want ___ (fine with friends, a bit blunt with a waiter)<br>• <b>Έχετε</b> ___; = do you have ___?<br>• <b>Μπορώ να έχω</b> ___; = can I have ___?<br>• <b>Υπάρχει</b> ___ <b>εδώ κοντά</b>; = is there a ___ nearby?<br>• <b>Πού είναι</b> ___; = where is ___?<br>• <b>Πόσο κάνει;</b> = how much is it?<br><br>Swap in anything: <b>θα ήθελα έναν καφέ</b> · <b>θα ήθελα μια μπύρα</b> · <b>θα ήθελα ένα νερό</b><br><br>💡 <b>Υπάρχει φαρμακείο εδώ κοντά;</b> (Is there a pharmacy nearby?) works for anything: an ATM, a bakery, a beach.",
     practice:[
-      { q:"What does «¿Me da…?» mean?", opts:["can I have…?","where is…?","how much is…?"], a:0, skill:"phrases", explain:"<b>¿Me da…?</b> = can I have…?" },
-      { q:"How do you say “I want a coffee, please”?", opts:["¿Dónde está un café?","Quiero un café, por favor.","Un café es bueno."], a:1, skill:"phrases", explain:"<b>Quiero</b> = I want. Add <b>por favor</b>." },
-      { q:"Translate: «¿Me da la cuenta?»", opts:["Where is the bathroom?","I want the menu.","Can I have the check?"], a:2, skill:"translation", explain:"<b>la cuenta</b> = the check." },
-      { q:"Type in Spanish: “can I have two tacos, please?”", opts:[], a:["me da dos tacos por favor"], type:"fill", skill:"translation", explain:"<b>¿Me da dos tacos, por favor?</b>" },
-      { q:"In Mexico, what's the everyday way to order at a taco stand?", opts:["«Me pone…»","«¿Dónde está…?»","«¿Me da…?»"], a:2, skill:"phrases", explain:"<b>¿Me da…?</b> is the Mexican everyday order. «Me pone» is Spain." }
+      { q:"The most polite way to order is…", opts:["Θέλω έναν καφέ.","Θα ήθελα έναν καφέ.","Καφέ!"], a:1, skill:"phrases" },
+      { q:"«Υπάρχει φαρμακείο εδώ κοντά;» means…", opts:["Is there a pharmacy nearby?","Where's the pharmacy?","The pharmacy is near here."], a:0, skill:"phrases" },
+      { q:"Translate: «Do you have water?»", opts:["Έχετε νερό;","Θέλω νερό.","Πού είναι το νερό;"], a:0, skill:"translation" },
+      { q:"You want to ask the price. You say…", opts:["Πόσο κάνει;","Τι κάνεις;","Πού είναι;"], a:0, skill:"phrases", trick:true, explain:"<b>Πόσο κάνει;</b> = how much is it? Careful: <b>Τι κάνεις;</b> = how are you?" },
+      { q:"Type the Greek for “I'd like” (polite):", opts:[], a:["θα ήθελα"], type:"fill", skill:"phrases", explain:"<b>θα ήθελα</b> = I would like." }
     ]},
 
-  { id:"l1L-donde", level:"L1", diff:2, title:"¿Dónde está…?", titleEn:"Finding anything",
-    body:"<b>¿Dónde está…?</b> = where is…? Add any place and you'll never stay lost for long.<br><br>• <b>¿Dónde está el baño?</b> = where is the bathroom?<br>• <b>¿Dónde está el metro?</b> = where is the metro?<br><br>Start with <b>Disculpe</b> (excuse me). Then listen for:<br>• <b>a la derecha</b> = to the right<br>• <b>a la izquierda</b> = to the left<br>• <b>derecho</b> = straight ahead (not «right»!)<br>• <b>en la esquina</b> = on the corner<br>• <b>a dos cuadras</b> = two blocks away<br>• <b>cerca</b> = near · <b>lejos</b> = far<br><br>💡 <b>Pro tip:</b> Mexicans give directions in <b>cuadras</b> (blocks). And if someone says <b>«aquí nomás»</b> (just right here), it might still be a few blocks. Keep walking and ask again.",
+  { id:"l1L-arithmoi", level:"L1", diff:2, title:"Αριθμοί και ευρώ", titleEn:"Numbers 11–100 & euros",
+    body:"<b>11–12</b> have their own names: <b>έντεκα</b> (11), <b>δώδεκα</b> (12).<br><br><b>13–19</b> are «ten» + the number, squished together: <b>δεκατρία</b> (13), <b>δεκατέσσερα</b> (14), <b>δεκαπέντε</b> (15), <b>δεκαέξι</b> (16), <b>δεκαεφτά</b> (17), <b>δεκαοχτώ</b> (18), <b>δεκαεννιά</b> (19).<br><br><b>The tens:</b> <b>είκοσι</b> 20 · <b>τριάντα</b> 30 · <b>σαράντα</b> 40 · <b>πενήντα</b> 50 · <b>εξήντα</b> 60 · <b>εβδομήντα</b> 70 · <b>ογδόντα</b> 80 · <b>ενενήντα</b> 90 · <b>εκατό</b> 100<br><br>Then just add: <b>είκοσι πέντε</b> = 25, <b>σαράντα έξι</b> = 46.<br><br><b>Money:</b> <b>ευρώ</b> never changes (ένα ευρώ, δέκα ευρώ). Cents are <b>λεπτά</b>: €2.50 = <b>δύο ευρώ και πενήντα</b>.<br><br>💡 Ask <b>Πόσο κάνει;</b> and if the answer flies past you, hold out your phone's calculator. Everybody does it.",
     practice:[
-      { q:"What does «derecho» mean?", opts:["to the right","straight ahead","behind"], a:1, skill:"vocab-travel", trick:true, explain:"<b>derecho</b> = straight ahead. <b>a la derecha</b> = to the right." },
-      { q:"How do you say “to the left”?", opts:["a la izquierda","a la derecha","lejos"], a:0, skill:"vocab-travel", explain:"<b>a la izquierda</b> = to the left." },
-      { q:"Translate: «Está a dos cuadras, en la esquina.»", opts:["It's two minutes away, on the left.","It's far, near the metro.","It's two blocks away, on the corner."], a:2, skill:"translation", explain:"<b>a dos cuadras</b> = two blocks away, <b>en la esquina</b> = on the corner." },
-      { q:"Type in Spanish: “where is the bathroom?”", opts:[], a:["dónde está el baño"], type:"fill", skill:"translation", explain:"<b>¿Dónde está el baño?</b>" },
-      { q:"A woman tells you «Está muy cerca». Good news?", opts:["No, it's very far","Yes, it's very near","No, it's closed"], a:1, skill:"vocab-travel", explain:"<b>cerca</b> = near, <b>lejos</b> = far." }
+      { q:"What number is «δεκαπέντε»?", opts:["5","15","50"], a:1, skill:"vocab-numbers" },
+      { q:"How do you say 30?", opts:["τριάντα","τρία","δεκατρία"], a:0, skill:"vocab-numbers" },
+      { q:"«Σαράντα έξι ευρώ» is…", opts:["€46","€64","€16"], a:0, skill:"vocab-numbers" },
+      { q:"Translate: «εκατό»", opts:["10","100","1,000"], a:1, skill:"translation" },
+      { q:"Type the number 20 in Greek:", opts:[], a:["είκοσι"], type:"fill", skill:"vocab-numbers", explain:"<b>είκοσι</b> = 20 (like «icosahedron», the 20-sided die)." }
     ]},
 
-  { id:"l1L-pesos", level:"L1", diff:3, title:"¿Cuánto cuesta?", titleEn:"Prices & pesos",
-    body:"You know 0–20. Now count by tens:<br><b>veinte</b> 20 · <b>treinta</b> 30 · <b>cuarenta</b> 40 · <b>cincuenta</b> 50 · <b>sesenta</b> 60 · <b>setenta</b> 70 · <b>ochenta</b> 80 · <b>noventa</b> 90 · <b>cien</b> 100<br><br>In between, just add <b>y</b>: <b>treinta y cinco</b> = 35.<br>Over 100, cien becomes <b>ciento</b>: <b>ciento cincuenta pesos</b> = 150. And <b>doscientos pesos</b> = 200.<br><br>• <b>¿Cuánto cuesta?</b> = how much is it? (one thing)<br>• <b>¿Cuánto es?</b> = how much is it? (the total)<br>• <b>en efectivo</b> = in cash · <b>con tarjeta</b> = by card<br><br>💡 <b>Pro tip:</b> carry small bills and coins. Taco stands, markets and many taxis want <b>efectivo</b>, and a 500-peso bill can make a street vendor sigh.",
+  { id:"l1L-erotiseis", level:"L1", diff:3, title:"Ερωτήσεις", titleEn:"Question words",
+    body:"• <b>τι;</b> = what?<br>• <b>πού;</b> = where?<br>• <b>πότε;</b> = when?<br>• <b>πόσο;</b> = how much? · <b>πόσα;</b> = how many?<br>• <b>πώς;</b> = how?<br>• <b>ποιος;</b> = who? / which?<br>• <b>γιατί;</b> = why? — and the answer starts with <b>γιατί</b> too: it also means «because»!<br>• <b>τι ώρα;</b> = what time?<br><br>💡 The Greek question mark is <b>;</b>. And watch the accent: <b>πού;</b> = where?, but <b>που</b> without it means «that / which».",
     practice:[
-      { q:"What number is «setenta»?", opts:["60","70","17"], a:1, skill:"vocab-numbers", explain:"<b>setenta</b> = 70. (<b>sesenta</b> = 60.)" },
-      { q:"How do you say 150 pesos?", opts:["ciento cincuenta pesos","cien y cincuenta pesos","cincuenta pesos"], a:0, skill:"vocab-numbers", explain:"Over 100, <b>cien</b> becomes <b>ciento</b>: <b>ciento cincuenta</b>." },
-      { q:"You're at the register with a full basket. Which question asks for the total?", opts:["¿Cuánto cuesta?","¿Dónde está?","¿Cuánto es?"], a:2, skill:"vocab-numbers", explain:"<b>¿Cuánto es?</b> = how much is it (total). <b>¿Cuánto cuesta?</b> is for one thing." },
-      { q:"Translate: «Noventa pesos, en efectivo.»", opts:["Nineteen pesos, by card.","Ninety pesos, in cash.","Nine pesos, in cash."], a:1, skill:"translation", explain:"<b>noventa</b> = 90, <b>en efectivo</b> = in cash." },
-      { q:"Type in Spanish: “how much is it?” (for one thing)", opts:[], a:["cuánto cuesta"], type:"fill", skill:"translation", explain:"<b>¿Cuánto cuesta?</b>" }
+      { q:"«Πού είναι η παραλία;» asks…", opts:["where the beach is","when the beach opens","how far the beach is"], a:0, skill:"questions" },
+      { q:"«Γιατί;» means…", opts:["why?","who?","when?"], a:0, skill:"questions" },
+      { q:"Your friend answers «Γιατί είμαι κουρασμένος». Here «γιατί» means…", opts:["because","why","but"], a:0, skill:"questions", trick:true, explain:"<b>γιατί</b> is both «why?» and «because». The question mark tells you which." },
+      { q:"Translate: «Τι ώρα;»", opts:["What time?","How much?","What's that?"], a:0, skill:"translation" },
+      { q:"Type the Greek for “where?”:", opts:[], a:["πού"], type:"fill", skill:"questions", explain:"<b>πού;</b> = where? <b>Πού είναι…;</b> = where is…?" }
     ]},
 
-  { id:"l1L-preguntas", level:"L1", diff:4, title:"Las preguntas", titleEn:"Question words",
-    body:"Seven little words unlock almost every conversation. Each comes with a travel line you can steal:<br><br>• <b>¿Qué?</b> = what? · <b>¿Qué es esto?</b> = what is this?<br>• <b>¿Dónde?</b> = where? · <b>¿Dónde está el metro?</b> = where is the metro?<br>• <b>¿Cuánto?</b> = how much? · <b>¿Cuánto cuesta?</b> = how much is it?<br>• <b>¿Cuándo?</b> = when? · <b>¿Cuándo sale el camión?</b> = when does the bus leave?<br>• <b>¿Cómo?</b> = how? · <b>¿Cómo se dice «straw»?</b> = how do you say «straw»? (It's <b>popote</b>.)<br>• <b>¿Quién?</b> = who? · <b>¿Quién es?</b> = who is it?<br>• <b>¿A qué hora?</b> = at what time? · <b>¿A qué hora es el desayuno?</b> = what time is breakfast?<br><br>💡 <b>Pro tip:</b> didn't catch something? A bare «¿Qué?» can sound blunt. In Mexico, say <b>¿Mande?</b> (pardon?).",
+  { id:"l1L-arthra", level:"L1", diff:4, title:"Ο, η, το", titleEn:"«The» and gender",
+    body:"Every Greek noun is masculine, feminine or neuter — and «the» tells you which:<br>• <b>ο</b> (masculine): <b>ο καφές</b> the coffee, <b>ο λογαριασμός</b> the bill — often ends in -ος, -ας, -ης<br>• <b>η</b> (feminine): <b>η μπύρα</b> the beer, <b>η παραλία</b> the beach — often ends in -α, -η<br>• <b>το</b> (neuter): <b>το νερό</b> the water, <b>το ταξί</b>, <b>το σουβλάκι</b> — often ends in -ο, -ι, -μα<br><br>«A / one» follows the same pattern: <b>ένας καφές</b> · <b>μία μπύρα</b> · <b>ένα νερό</b><br><br>💡 After a verb, ο and η change a little: <b>θα ήθελα τον λογαριασμό</b>, <b>έχετε την κρέμα;</b>. That's why the stories say <b>τον</b> and <b>την</b>. Get it wrong and people still understand — keep talking.",
     practice:[
-      { q:"What does «¿Cuándo?» mean?", opts:["how?","when?","how much?"], a:1, skill:"questions", explain:"<b>¿Cuándo?</b> = when? Don't mix it up with <b>¿Cuánto?</b> = how much?" },
-      { q:"You want to know what time breakfast is. Which question do you need?", opts:["¿A qué hora?","¿Quién?","¿Dónde?"], a:0, skill:"questions", explain:"<b>¿A qué hora es el desayuno?</b> = what time is breakfast?" },
-      { q:"Translate: «¿Cuándo sale el camión?»", opts:["Where is the bus?","How much is the bus?","When does the bus leave?"], a:2, skill:"translation", explain:"<b>¿Cuándo?</b> = when? <b>el camión</b> = the (city) bus in Mexico." },
-      { q:"Type in Spanish: “where is the metro?”", opts:[], a:["dónde está el metro"], type:"fill", skill:"translation", explain:"<b>¿Dónde está el metro?</b>" },
-      { q:"You didn't hear the waiter. What's the polite Mexican way to say “pardon?”", opts:["¿Qué?","¿Quién?","¿Mande?"], a:2, skill:"questions", explain:"<b>¿Mande?</b> = pardon? A bare «¿Qué?» can sound blunt." }
+      { q:"Which is right?", opts:["ο μπύρα","η μπύρα","το μπύρα"], a:1, skill:"articles", explain:"<b>μπύρα</b> ends in -α → feminine → <b>η μπύρα</b>." },
+      { q:"In «το νερό», the word νερό is…", opts:["masculine","feminine","neuter"], a:2, skill:"articles" },
+      { q:"How do you say «a coffee»?", opts:["ένας καφές","μία καφές","ένα καφές"], a:0, skill:"articles", explain:"<b>ο καφές</b> is masculine, so «a coffee» is <b>ένας καφές</b>." },
+      { q:"Asking for the bill: «Θα ήθελα ___ λογαριασμό.»", opts:["ο","τον","το"], a:1, skill:"articles", explain:"After the verb, <b>ο</b> becomes <b>τον</b>: <b>θα ήθελα τον λογαριασμό</b>." },
+      { q:"Translate: «η παραλία»", opts:["the beach","a beach","the pool"], a:0, skill:"translation" }
     ]}
+
 ];
 
 /* ============================================================================
-   L2
+   L2 — On the road
    ========================================================================== */
-/* LEVEL L2 — De viaje · On the road */
 const STORIES_L2 = [
 
-  { id:"l2-mercado", level:"L2", diff:1, titleEs:"El mercado", titleEn:"The market",
-    text:"[El mercado|the market] de Mérida. [Hay|there is / there are] [fruta|fruit] [por todos lados|everywhere].\n— ¡[Pásele|come on in], [pásele|come on in]! ¿[Qué le damos|what can I get you]?\n— [Buenos días|good morning]. ¿[Cuánto cuesta|how much is it] [el mango|the mango]?\n— [Cuarenta pesos|forty pesos] [el kilo|per kilo]. ¡[Está barato|it's cheap]!\n— [Quiero|I want] [un kilo|a kilo], [por favor|please]. ¿Y [la piña|the pineapple]?\n— [Treinta|thirty]. Y [la papaya|the papaya], [cincuenta|fifty]. [Está muy dulce|it's very sweet].\n— [También|also] [una piña|a pineapple] y [una papaya|a papaya]. ¿[Cuánto es|how much is it (total)]?\n— [Son ciento veinte pesos|that's 120 pesos].\n— [Me llevo todo|I'll take everything]. ¿[Me hace un descuento|can I get a discount]?\n— [Ándele|all right then]… [se lo dejo en cien|I'll do it for 100].\n— ¡[Perfecto|perfect]! [Muchas gracias|thank you very much].\n— ¿[Algo más|anything else]?\n— No, [es todo|that's all]. ¡[Hasta luego|see you later]!",
+  { id:"l2-ploio", level:"L2", diff:1, titleGr:"Το πλοίο για Σαντορίνη", titleEn:"The ferry to Santorini",
+    text:"[Στο πρακτορείο|at the ticket office] [στο λιμάνι|at / to the port] [της Νάξου|of Naxos].\n— [Καλημέρα|good morning]. [Δύο εισιτήρια|two tickets] [για Σαντορίνη|to Santorini], [παρακαλώ|please / you're welcome].\n— [Για σήμερα|for today];\n— [Ναι|yes]. [Τι ώρα|what time] [φεύγει|leaves] [το πλοίο|the ferry];\n— [Στις επτά και μισή|at seven thirty]. [Φτάνει|it arrives] [στις εννιά και μισή|at nine thirty].\n— [Πόσο κάνει|how much is it];\n— [Ογδόντα ευρώ|eighty euros] [τα δύο|for the two].\n— [Εντάξει|OK]. [Από ποια πύλη|from which gate];\n— [Δεν έχει πύλη|there's no gate] [εδώ|here]! [Να είστε στο λιμάνι|be at the port] [μισή ώρα νωρίτερα|half an hour early].",
     quiz:[
-      { q:"¿Cuánto cuesta el kilo de mango?", opts:["treinta pesos","cincuenta pesos","cuarenta pesos"], a:2, skill:"vocab-numbers" },
-      { q:"¿Qué fruta cuesta treinta pesos?", opts:["la piña","la papaya","el mango"], a:0, skill:"vocab-food" },
-      { q:"¿Cuánto pagas al final? (How much do you pay in the end?)", opts:["ciento veinte pesos","cien pesos","ochenta pesos"], a:1, skill:"comprehension", trick:true,
-        explain:"The total is 120, but you ask for a discount and the seller says <b>se lo dejo en cien</b>: I'll do it for 100." },
-      { q:"¿Cómo se dice “can I get a discount” en español?", opts:[], a:["me hace un descuento","me hace un descuentito"], type:"fill", skill:"phrases",
-        explain:"<b>¿Me hace un descuento?</b> is fair game for crafts, souvenirs and when you're buying a lot — like here, three things at once. Haggling over a single kilo of fairly-priced fruit reads as cheap; ask for <b>un pilón</b> (a little extra thrown in) instead." }
+      { q:"Where are you going?", opts:["Santorini","Piraeus","Crete"], a:0, skill:"vocab-travel" },
+      { q:"What time does the ferry leave?", opts:["7:30","7:00","9:30"], a:0, skill:"vocab-numbers", explain:"<b>στις επτά και μισή</b> = at seven and a half = 7:30." },
+      { q:"How much does ONE ticket cost?", opts:["€80","€40","€18"], a:1, skill:"vocab-numbers", trick:true, explain:"<b>ογδόντα ευρώ τα δύο</b> = 80 for the two of you — so 40 each." },
+      { q:"When should you be at the port?", opts:["half an hour early","an hour early","at 9:30"], a:0, skill:"comprehension" }
     ]},
 
-  { id:"l2-camion", level:"L2", diff:2, titleEs:"El ADO a Tulum", titleEn:"The ADO bus to Tulum",
-    text:"[La terminal|the bus station] ADO de Playa del Carmen. [Hace calor|it's hot].\n— [Buenos días|good morning]. [Un boleto|a ticket] a Tulum, [por favor|please].\n— ¿[Sencillo|one-way] o [redondo|round trip]?\n— [Ida y vuelta|round trip], [por favor|please]. ¿[A qué hora sale|what time does it leave]?\n— [Hay|there is / there are] uno [a las diez|at ten] y [otro|another] [a las once y media|at eleven thirty].\n— [A las diez|at ten], [por favor|please].\n— [Muy bien|very good]. ¿[Ventana o pasillo|window or aisle]?\n— [Ventana|window], [por favor|please].\n— [El asiento|the seat] [doce|twelve]. [Son doscientos pesos|that's 200 pesos]. ¿[En efectivo|in cash] o [con tarjeta|by card]?\n— [En efectivo|in cash]. [Aquí tiene|here you go].\n— [Gracias|thank you]. [Sale de|it leaves from] [la puerta tres|gate three], [a la derecha|to the right]. ¡[Buen viaje|have a good trip]!\n[En el autobús|on the bus] [hace mucho frío|it's very cold]. ¡[Necesito|I need] [mi chamarra|my jacket]!",
+  { id:"l2-paralia", level:"L2", diff:2, titleGr:"Στην παραλία", titleEn:"At the beach",
+    text:"[Μια παραλία|a beach] [στη Νάξο|in / to Naxos]. [Ο ήλιος|the sun] [καίει|burns].\n— [Συγγνώμη|excuse me / sorry], [πόσο κάνουν|how much are] [οι ξαπλώστρες|the sunbeds];\n— [Δέκα ευρώ|ten euros] [με την ομπρέλα|with the umbrella]. [Αλλά|but] [αν πάρετε κάτι από το μπαρ|if you order something from the bar], [είναι δωρεάν|they're free].\n— [Τέλεια|perfect / great]! [Δύο φραπέ|two frappés], [παρακαλώ|please / you're welcome].\n— [Μάλιστα|certainly]! [Κάτι άλλο|anything else];\n— [Όχι|no], [ευχαριστώ|thank you].\n[Η θάλασσα|the sea] [είναι|is / are] [κρύα|cold] [αλλά|but] [πεντακάθαρη|crystal clear]. [Σιγά σιγά|slowly, slowly]… [μέσα|in you go]!",
     quiz:[
-      { q:"¿A qué hora sale tu autobús?", opts:["a las once y media","a las diez","a las doce"], a:1, skill:"vocab-numbers", trick:true,
-        explain:"There are two buses and you pick <b>a las diez</b> (10:00). <b>Doce</b> is your seat number, not the time." },
-      { q:"¿Qué es «ida y vuelta»? (What does it mean?)", opts:["one-way","window seat","round trip"], a:2, skill:"vocab-travel",
-        explain:"<b>Ida y vuelta</b> = there and back. In Mexico you'll also hear <b>redondo</b>. One-way is <b>sencillo</b>." },
-      { q:"¿Hace frío o calor en el autobús? (Is it cold or hot on the bus?)", opts:["hace mucho frío","hace mucho calor","no hay asientos"], a:0, skill:"comprehension",
-        explain:"On the bus, <b>hace mucho frío</b> — ADO blasts the air conditioning, so bring <b>una chamarra</b> (a jacket) even in Cancún. Word check: a <b>city</b> bus is <b>el camión</b>; long-distance lines like ADO are <b>el autobús</b> (though plenty of people say <b>el camión</b> for those too)." },
-      { q:"¿Cómo se dice “what time does it leave” en español?", opts:[], a:["a qué hora sale"], type:"fill", skill:"questions",
-        explain:"<b>¿A qué hora sale?</b> works for buses, boats, tours and flights." }
+      { q:"How much are the sunbeds if you don't order anything?", opts:["they're free","€10","€2"], a:1, skill:"vocab-numbers" },
+      { q:"How do you get the sunbeds for free?", opts:["come early","order something from the bar","bring your own umbrella"], a:1, skill:"comprehension" },
+      { q:"What is the sea like?", opts:["warm and calm","cold but crystal clear","dirty"], a:1, skill:"comprehension" },
+      { q:"«Σιγά σιγά» means…", opts:["hurry up","slowly, slowly","quiet, please"], a:1, skill:"greek-life", explain:"<b>σιγά σιγά</b> = slowly, slowly — the island motto. Into cold water, and through life." }
     ]},
 
-  { id:"l2-cenote", level:"L2", diff:3, titleEs:"La playa y el cenote", titleEn:"The beach and the cenote",
-    text:"[En la mañana|in the morning], [la playa|the beach]: [sol|sun], [mar|sea] y [tacos de pescado|fish tacos]. [En la tarde|in the afternoon], ¡[el cenote|the cenote]!\n— [Buenas tardes|good afternoon]. [Quiero nadar|I want to swim]. ¿[Hay|there is / there are] [lockers|lockers]?\n— [Sí|yes], [ahí|there], [a la izquierda|to the left].\n— ¿Y [hay|there is / there are] [baños|bathrooms]?\n— [Sí|yes], [también|also]. ¿[Tiene|do you have] [bloqueador|sunscreen]?\n— [Sí|yes], [es biodegradable|it's biodegradable].\n— [Perfecto|perfect]. [Aquí|here] [solo|only] [bloqueador biodegradable|biodegradable sunscreen]. [Primero|first], [la regadera|the shower], [por favor|please].\n— ¿[Hay|there is / there are] [chalecos|life vests]?\n— [Claro|of course]. [El chaleco|the life vest] [es obligatorio|is mandatory].\n[Diez minutos después|ten minutes later]…\n— ¿[Qué tal|how's] [el agua|the water]?\n— ¡[Está fría|it's cold]! [Muy|very], [muy|very] [fría|cold]… ¡[pero|but] [está padre|it's cool]! ¡Y [hay|there is / there are] [tortugas|turtles]!",
+  { id:"l2-fournos", level:"L2", diff:3, titleGr:"Στον φούρνο", titleEn:"At the bakery",
+    text:"[Πρωί|morning]. [Ο φούρνος|the bakery] [μυρίζει|smells] [υπέροχα|wonderful].\n— [Καλημέρα|good morning]! [Τι είναι αυτό|what's this];\n— [Σπανακόπιτα|spinach pie]. [Κι αυτή|and this one] [είναι|is / are] [τυρόπιτα|cheese pie].\n— [Μου αρέσει|I like] [το τυρί|cheese]. [Μία τυρόπιτα|one cheese pie], [παρακαλώ|please / you're welcome]. [Και|and / also] [ένα κουλούρι|a sesame bread ring].\n— [Για εδώ|for here] [ή|or] [για πακέτο|to go];\n— [Για πακέτο|to go].\n— [Ορίστε|here you go]. [Τρία ευρώ|three euros].\n— [Ευχαριστώ|thank you]!\n— [Καλή συνέχεια|have a good day]!",
     quiz:[
-      { q:"¿Dónde están los lockers?", opts:["a la izquierda","a la derecha","derecho"], a:0, skill:"vocab-travel" },
-      { q:"¿Qué es obligatorio en el cenote? (What's mandatory?)", opts:["el bloqueador","el chaleco","los lockers"], a:1, skill:"comprehension", trick:true,
-        explain:"<b>El chaleco es obligatorio</b>: the life jacket is mandatory. Sunscreen is only OK if it's biodegradable." },
-      { q:"En el cenote, ¿qué bloqueador? (Which sunscreen is allowed?)", opts:["cualquier bloqueador (any kind)","mucho bloqueador (lots)","solo biodegradable"], a:2, skill:"mexican",
-        explain:"Cenotes are fragile freshwater caves and chemicals hurt them. Only <b>bloqueador biodegradable</b>, and shower first at <b>la regadera</b>." },
-      { q:"¿Cómo está el agua? (How's the water?)", opts:["warm and boring","cold, but cool","too dirty to swim"], a:1, skill:"comprehension",
-        explain:"<b>Está fría</b> = it's cold. <b>Está padre</b> = it's cool (as in awesome)." }
+      { q:"What is «σπανακόπιτα»?", opts:["cheese pie","spinach pie","sesame bread"], a:1, skill:"vocab-food", explain:"<b>σπανάκι</b> (spinach) + <b>πίτα</b> (pie) = <b>σπανακόπιτα</b>." },
+      { q:"What do you buy?", opts:["a spinach pie","a cheese pie and a koulouri","two coffees"], a:1, skill:"comprehension" },
+      { q:"«Για πακέτο» means…", opts:["for here","to go","in a bag"], a:1, skill:"phrases" },
+      { q:"Type the Greek for “I like” (+ one thing):", opts:[], a:["μου αρέσει"], type:"fill", skill:"likes", explain:"<b>Μου αρέσει το τυρί.</b> = I like cheese." }
     ]},
 
-  { id:"l2-amigos", level:"L2", diff:4, titleEs:"Diego", titleEn:"Meeting Diego",
-    text:"[La terraza|the rooftop] del hostal en Tulum. [Un chavo|a young guy] [con una guitarra|with a guitar].\n— ¡[Hola|hi]! [Soy Diego|I'm Diego]. ¿[Cómo estás|how are you]?\n— [Bien|good / fine], [gracias|thank you]. [Mucho gusto|nice to meet you].\n— [Igualmente|likewise]. ¿[De dónde eres|where are you from]?\n— [Soy de Canadá|I'm from Canada]. ¿[Y tú|and you]?\n— [Soy de Mérida|I'm from Mérida], [pero|but] [vivo|I live] [aquí|here]. ¿[A qué te dedicas|what do you do (for work)]?\n— [Soy turista|I'm a tourist]… y [estudiante de español|Spanish student].\n— ¡[Órale|OK / wow / come on]! ¿Y [cuánto tiempo vas a estar|how long are you staying] en México?\n— [Dos semanas|two weeks]: [una|one (feminine)] en Tulum y [una|one (feminine)] en Oaxaca.\n— ¡[Qué padre|how cool]! [Yo soy guía de cenotes|I'm a cenote guide]. [Te paso mi WhatsApp|I'll give you my WhatsApp], ¿[va|OK (deal)]?\n— ¡[Va|OK (deal)]!",
+  { id:"l2-laiki", level:"L2", diff:4, titleGr:"Στη λαϊκή", titleEn:"At the street market",
+    text:"[Κάθε Σάββατο|every Saturday] [έχει|there is / there are] [λαϊκή|a street market].\n— [Ντομάτες|tomatoes]! [Φρέσκες ντομάτες|fresh tomatoes]! [Ένα ευρώ|one euro] [το κιλό|a kilo]!\n— [Καλημέρα|good morning]. [Ένα κιλό ντομάτες|a kilo of tomatoes], [παρακαλώ|please / you're welcome].\n— [Ορίστε|here you go]. [Τίποτα άλλο|nothing else? (= anything else?)];\n— [Ναι|yes], [μισό κιλό|half a kilo] [σταφύλια|grapes]. [Είναι γλυκά|are they sweet];\n— [Σαν μέλι|like honey]! [Δοκίμασε|try one]!\n— Μμμ… [πολύ γλυκά|very sweet]!\n— [Δύο ευρώ|two euros] [όλα|altogether]. [Και|and / also] [λίγο μαϊντανό|a bit of parsley] — [δώρο|a gift]!",
     quiz:[
-      { q:"¿De dónde es Diego?", opts:["de Tulum","de Mérida","de Canadá"], a:1, skill:"comprehension", trick:true,
-        explain:"Diego <b>lives</b> in Tulum (<b>vivo aquí</b>), but he's <b>from</b> Mérida: <b>soy de Mérida</b>." },
-      { q:"¿Cuánto tiempo vas a estar en México?", opts:["dos semanas","dos días","dos meses"], a:0, skill:"comprehension" },
-      { q:"¿Qué es «¿a qué te dedicas?»? (What does it mean?)", opts:["where are you from?","how long are you staying?","what do you do for work?"], a:2, skill:"questions",
-        explain:"<b>¿A qué te dedicas?</b> is the friendly way to ask about someone's job. Answer with <b>soy</b> + what you are: <b>soy turista</b>, <b>soy maestra</b>, <b>soy estudiante</b>." },
-      { q:"¿Cómo se dice “I'm from…” en español?", opts:[], a:["soy de"], type:"fill", skill:"phrases",
-        explain:"<b>Soy de</b> + place: <b>soy de Canadá</b>, <b>soy de Chicago</b>, <b>soy de aquí</b>." }
+      { q:"How much are the tomatoes?", opts:["€1 a kilo","€2 a kilo","€1 each"], a:0, skill:"vocab-numbers" },
+      { q:"How many grapes do you buy?", opts:["a kilo","half a kilo","two kilos"], a:1, skill:"comprehension" },
+      { q:"What do you get for free?", opts:["grapes","parsley","a tomato"], a:1, skill:"comprehension", explain:"<b>δώρο</b> = a gift. Market sellers love to throw in a bunch of herbs." },
+      { q:"«Σαν μέλι» means…", opts:["like honey","a little sweet","not ripe yet"], a:0, skill:"vocab-food" }
     ]},
 
-  { id:"l2-restaurante", level:"L2", diff:5, titleEs:"La cuenta, por favor", titleEn:"Dinner and the check",
-    text:"Un restaurante en Tulum.\n— [Buenas noches|good evening]. [Una mesa para dos|a table for two], [por favor|please].\n— [Pásenle|come on in (you all)]. [Por aquí|this way].\n— ¿[Me da|can I have] [el menú|the menu], [por favor|please]?\n— [Claro|of course], [aquí está|here is] [la carta|the menu (the card)].\n— [Gracias|thank you]. ¿[Qué me recomienda|what do you recommend]?\n— [La cochinita pibil|slow-roasted pork (Yucatán)]. ¡[Está deliciosa|it's delicious]!\n— [Perfecto|perfect]. [Dos órdenes de cochinita|two orders of cochinita] y [dos horchatas|two horchatas (rice drinks)], [por favor|please].\n[Una hora después|an hour later]…\n— [La cuenta|the check], [por favor|please]. ¿[Aceptan tarjeta|do you take card]?\n— [Sí|yes], [claro|of course]. [Ahorita|right now (or: in a bit)] [se la traigo|I'll bring it to you].\n— ¿[La propina|the tip] [está incluida|is included]?\n— No, [no está incluida|it's not included].\n[La cuenta|the check]: [cuatrocientos pesos|four hundred pesos]. [La propina|the tip] [en México|in Mexico]: [diez o quince por ciento|10 or 15 percent]. [Dejo|I leave] [sesenta pesos|sixty pesos]. ¡[Todos contentos|everyone's happy]!",
+  { id:"l2-portara", level:"L2", diff:5, titleGr:"Πού είναι η Πορτάρα;", titleEn:"Where's the Portara?",
+    text:"[Στη Χώρα|in Chora (the island's main town)] [της Νάξου|of Naxos].\n— [Συγγνώμη|excuse me / sorry], [πού είναι|where is] [η Πορτάρα|the Portara (the giant marble gate)];\n— [Είναι κοντά|it's close]. [Πηγαίνετε|go] [ευθεία|straight ahead] [μέχρι το λιμάνι|as far as the port]. [Μετά|then / after] [αριστερά|left], [και|and / also] [ανεβαίνετε|you go up] [στο νησάκι|onto the little island].\n— [Είναι μακριά|is it far];\n— [Όχι|no], [δέκα λεπτά|ten minutes] [με τα πόδια|on foot].\n— [Ευχαριστώ πολύ|thank you very much]!\n— [Τίποτα|don't mention it]! [Καλή βόλτα|enjoy your walk]!",
     quiz:[
-      { q:"¿Qué te recomienda el mesero?", opts:["los tacos al pastor","la cochinita pibil","la sopa de tortilla"], a:1, skill:"vocab-food",
-        explain:"<b>La cochinita pibil</b>: slow-roasted pork from the Yucatán. Order it." },
-      { q:"¿Cuánto es la cuenta?", opts:["cuatrocientos sesenta pesos","sesenta pesos","cuatrocientos pesos"], a:2, skill:"vocab-numbers", trick:true,
-        explain:"The check is <b>cuatrocientos</b> (400). The 60 is <b>la propina</b>, which you add on top." },
-      { q:"¿Cuánto es la propina normal en México? (What's a normal tip?)", opts:["diez o quince por ciento","cero, no hay propina","treinta por ciento"], a:0, skill:"mexican",
-        explain:"<b>La propina</b> is usually <b>10–15%</b> and usually <b>not</b> included, so it's fair to ask: <b>¿la propina está incluida?</b>" },
-      { q:"¿Cómo se dice “do you take card” en español?", opts:[], a:["aceptan tarjeta","aceptan tarjetas"], type:"fill", skill:"phrases",
-        explain:"<b>¿Aceptan tarjeta?</b> Ask before you order: small places are often cash only (<b>solo efectivo</b>)." }
+      { q:"Is the Portara far?", opts:["yes, an hour away","no, ten minutes on foot","you need a taxi"], a:1, skill:"comprehension" },
+      { q:"At the port, you turn…", opts:["right","left","back"], a:1, skill:"vocab-travel" },
+      { q:"«Ευθεία» means…", opts:["straight ahead","on the right","upstairs"], a:0, skill:"vocab-travel" },
+      { q:"Type the Greek for “left” (the direction):", opts:[], a:["αριστερά"], type:"fill", skill:"vocab-travel", explain:"<b>αριστερά</b> = left · <b>δεξιά</b> = right · <b>ευθεία</b> = straight on." }
     ]},
 
-  { id:"l2-planes", level:"L2", diff:6, titleEs:"¿Te late?", titleEn:"Making plans with Diego",
-    text:"[Un mensaje|a message] de Diego:\n— ¡[Qué onda|what's up]! [El viernes|on Friday] [hay|there is / there are] [un concierto|a concert] en [la playa|the beach]. ¿[Te late|sound good]?\n— [El viernes|on Friday] [no puedo|I can't]. ¿Y [el sábado|on Saturday]?\n— ¡[El sábado|on Saturday] [también|also]! [A las ocho|at eight] [de la noche|at night].\n— ¡[Perfecto|perfect]! ¿[Dónde|where]?\n— ¿[Nos vemos en|shall we meet at] [el OXXO|the OXXO] de [la esquina|the corner]?\n— ¿En [el OXXO|the OXXO]? ¡Jaja! [Va|OK (deal)].\n— Y [antes|before that], [a las siete|at seven], ¿[unos tacos de pescado|some fish tacos]? ¿[Te late|sound good]?\n— ¡[Me late|I'm in]!\n— [Mañana|tomorrow] [en la mañana|in the morning] [te mando|I'll send you] [la ubicación|the location].\n— ¡[Órale|OK / wow / come on]! ¡[Nos vemos el sábado|see you Saturday]!",
+  { id:"l2-mixanaki", level:"L2", diff:6, titleGr:"Ένα μηχανάκι", titleEn:"Renting a scooter",
+    text:"[Ένα γραφείο ενοικιάσεων|a rental office].\n— [Γεια σας|hello / goodbye (polite)]. [Θα ήθελα|I'd like] [να νοικιάσω|to rent] [ένα μηχανάκι|a scooter].\n— [Για πόσες μέρες|for how many days];\n— [Για τρεις μέρες|for three days]. [Πόσο κάνει|how much is it];\n— [Είκοσι πέντε ευρώ|twenty-five euros] [τη μέρα|a day]. [Έχετε δίπλωμα|do you have a licence];\n— [Ναι|yes], [ορίστε|here you go].\n— [Το κράνος|the helmet] — [πάντα|always]! [Η βενζίνη|the petrol] [δεν περιλαμβάνεται|isn't included].\n— [Εντάξει|OK]. [Πού είναι|where is] [το βενζινάδικο|the petrol station];\n— [Δίπλα στο σούπερ μάρκετ|next to the supermarket].",
     quiz:[
-      { q:"¿Cuándo es el plan?", opts:["el viernes","mañana","el sábado"], a:2, skill:"comprehension", trick:true,
-        explain:"Diego says <b>el viernes</b> first, but you <b>no puedo</b> (can't). The plan is <b>el sábado</b>." },
-      { q:"¿A qué hora son los tacos?", opts:["a las siete","a las ocho","a las nueve"], a:0, skill:"vocab-numbers",
-        explain:"Tacos <b>a las siete</b> (7:00), then the concert <b>a las ocho</b> (8:00)." },
-      { q:"¿Dónde se ven? (Where do you meet?)", opts:["en la playa","en el OXXO","en el hostal"], a:1, skill:"comprehension",
-        explain:"<b>¿Nos vemos en el OXXO?</b> There's one on almost every corner, so it's the easiest landmark in Mexico." },
-      { q:"¿Qué es «¿te late?»? (What does it mean?)", opts:["are you late?","do you like tacos?","are you up for it?"], a:2, skill:"mexican",
-        explain:"<b>¿Te late?</b> = are you up for it? / sound good? The answer: <b>¡me late!</b> = I'm in! Nothing to do with being late." }
+      { q:"How long do you rent the scooter for?", opts:["one day","three days","a week"], a:1, skill:"comprehension" },
+      { q:"How much is it per day?", opts:["€25","€52","€20"], a:0, skill:"vocab-numbers" },
+      { q:"What does the man say about the petrol?", opts:["it's included","it isn't included","it's free on Sundays"], a:1, skill:"comprehension" },
+      { q:"«Το κράνος — πάντα!» means…", opts:["the helmet is free","always wear the helmet","the helmet costs extra"], a:1, skill:"comprehension" }
     ]}
-
 ];
 
 const LESSONS_L2 = [
 
-  { id:"l2L-hay", level:"L2", diff:1, title:"Hay / ¿Hay…?", titleEn:"There is… / Is there…?",
-    body:"<b>Hay</b> means <b>there is / there are</b>. Put it in a question and it means <b>is there…? / are there…?</b> Same word, no changes. Just add a thing. (The h is silent: say it like “eye”.)<br><br>• <b>¿Hay baño?</b> — Is there a bathroom?<br>• <b>¿Hay wifi?</b> — Is there wifi? (say “wee-fee”)<br>• <b>¿Hay tacos de pastor?</b> — Are there pastor tacos?<br>• <b>Sí, hay.</b> — Yes, there are.<br>• <b>No hay.</b> — There isn't any. / We're out.<br>• <b>Hay un OXXO en la esquina.</b> — There's an OXXO on the corner.<br><br>💡 Pro tip: <b>No hay</b> is the answer you'll hear the most: sold out, none left, not today. Don't argue. Just ask <b>¿Hay otro?</b> (is there another one?) and smile.",
+  { id:"l2L-aresei", level:"L2", diff:1, title:"Μου αρέσει", titleEn:"I like…",
+    body:"Greek says «it pleases me»:<br>• <b>Μου αρέσει</b> + ONE thing: <b>μου αρέσει η θάλασσα</b> = I like the sea<br>• <b>Μου αρέσουν</b> + SEVERAL things: <b>μου αρέσουν οι ελιές</b> = I like olives<br>• <b>Δεν μου αρέσει</b> = I don't like<br>• <b>Σου αρέσει;</b> = do you like? (to a friend) · <b>Σας αρέσει;</b> (polite)<br>• <b>Μου άρεσε</b> = I liked it (past)<br><br>💡 Careful: <b>μου αρέσεις</b> means «I like YOU» — lovely to say, just make sure you mean it.",
     practice:[
-      { q:"What does «¿Hay wifi?» mean?", opts:["Where is the wifi?","Is there wifi?","I want wifi."], a:1, skill:"phrases" },
-      { q:"How do you say “There isn't any.”?", opts:["No hay.","No sé.","No entiendo."], a:0, skill:"phrases",
-        explain:"<b>No hay</b> = there isn't any / we're out. <b>No sé</b> = I don't know." },
-      { q:"You ask «¿Hay tacos de pastor?» and they have them. What do they say?", opts:["No hay.","¿Hay otro?","Sí, hay."], a:2, skill:"phrases",
-        explain:"<b>Sí, hay</b> = yes, there are. The question and the answer use the same word." },
-      { q:"Translate: «Hay un OXXO en la esquina.»", opts:["Is there an OXXO on the corner?","There's an OXXO on the corner.","The OXXO is closed."], a:1, skill:"translation",
-        explain:"No question marks, so it's a statement: <b>hay</b> = there is." },
-      { q:"Translate into Spanish: “Is there a bathroom?”", opts:[], a:["hay baño","hay un baño","hay baños"], type:"fill", skill:"translation",
-        explain:"<b>¿Hay baño?</b> The most useful three syllables in Mexico." }
+      { q:"«Μου αρέσουν οι ελιές» means…", opts:["I like olives","I'd like olives","olives like me"], a:0, skill:"likes" },
+      { q:"You like the sea (one thing). You say…", opts:["Μου αρέσει η θάλασσα.","Μου αρέσουν η θάλασσα.","Μου αρέσεις η θάλασσα."], a:0, skill:"likes", explain:"One thing → <b>μου αρέσει</b>. (<b>Μου αρέσεις</b> = I like you!)" },
+      { q:"You like the beaches (several). You say…", opts:["Μου αρέσει οι παραλίες.","Μου αρέσουν οι παραλίες.","Σου αρέσουν οι παραλίες."], a:1, skill:"likes" },
+      { q:"Translate: «Σας αρέσει η Νάξος;»", opts:["Do you like Naxos?","I like Naxos.","Is Naxos nice?"], a:0, skill:"translation" },
+      { q:"Type the Greek for “I don't like” (+ one thing):", opts:[], a:["δεν μου αρέσει"], type:"fill", skill:"likes", explain:"<b>Δεν μου αρέσει</b> — δεν (not) goes first." }
     ]},
 
-  { id:"l2L-gusta", level:"L2", diff:2, title:"Me gusta / No me gusta", titleEn:"Likes and dislikes",
-    body:"Forget verbs. To say you like something, grab the chunk <b>me gusta</b> (I like) and add one thing. Liking more than one thing? Use its twin, <b>me gustan</b>.<br><br>• <b>Me gusta el mango.</b> — I like mango.<br>• <b>Me gustan los tacos.</b> — I like tacos.<br>• <b>No me gusta lo picante.</b> — I don't like spicy food.<br>• <b>¿Te gusta el mezcal?</b> — Do you like mezcal? (asking a friend)<br>• <b>¡Me encanta!</b> — I love it!<br>• <b>Me encanta Oaxaca.</b> — I love Oaxaca.<br><br>💡 Pro tip: Not into heat? Say <b>no me gusta lo picante</b> before you order. And when someone promises «no pica» (it's not spicy)… taste it first. In Mexico, spicy is a matter of opinion.",
+  { id:"l2L-ora", level:"L2", diff:2, title:"Τι ώρα είναι;", titleEn:"Time & days",
+    body:"<b>Τι ώρα είναι;</b> = what time is it?<br>• <b>Είναι δύο.</b> = It's two.<br>• <b>δύο και τέταρτο</b> = 2:15 · <b>δύο και μισή</b> = 2:30 · <b>τρεις παρά τέταρτο</b> = 2:45 («three minus a quarter»)<br>• <b>στις οκτώ</b> = at eight<br>• For hours, 1, 3 and 4 take the feminine: <b>μία</b>, <b>τρεις</b>, <b>τέσσερις</b> (because η ώρα is feminine).<br><br><b>Days</b> — most are just counted from Sunday:<br><b>Δευτέρα</b> Mon («second») · <b>Τρίτη</b> Tue («third») · <b>Τετάρτη</b> Wed («fourth») · <b>Πέμπτη</b> Thu («fifth») · <b>Παρασκευή</b> Fri · <b>Σάββατο</b> Sat · <b>Κυριακή</b> Sun («the Lord's day»)<br><br><b>σήμερα</b> today · <b>αύριο</b> tomorrow · <b>χθες</b> yesterday<br><b>το πρωί</b> in the morning · <b>το μεσημέρι</b> at midday · <b>το απόγευμα</b> in the afternoon · <b>το βράδυ</b> in the evening",
     practice:[
-      { q:"What does «¡Me encanta!» mean?", opts:["I don't like it.","I love it!","Do you like it?"], a:1, skill:"phrases" },
-      { q:"You like tacos (lots of them). Which one sounds right?", opts:["Me gustan los tacos.","Me gusta los tacos.","No me gustan los tacos."], a:0, skill:"phrases",
-        explain:"More than one thing → <b>me gustan</b>. One thing → <b>me gusta</b>." },
-      { q:"How do you ask a friend “Do you like mezcal?”", opts:["¿Hay mezcal?","¿Me gusta el mezcal?","¿Te gusta el mezcal?"], a:2, skill:"phrases",
-        explain:"<b>¿Te gusta…?</b> asks your friend. <b>Me gusta</b> is about you." },
-      { q:"Translate: «No me gusta lo picante.»", opts:["I love spicy food.","I don't like spicy food.","Is it spicy?"], a:1, skill:"translation" },
-      { q:"Translate into Spanish: “I like mango.”", opts:[], a:["me gusta el mango","me gustan los mangos"], type:"fill", skill:"translation",
-        explain:"<b>Me gusta el mango.</b> Mango season in Mexico is spring and summer. You're welcome." }
+      { q:"«Στις επτά και μισή» is…", opts:["7:30","7:15","6:30"], a:0, skill:"vocab-numbers" },
+      { q:"«Τρεις παρά τέταρτο» is…", opts:["3:15","2:45","3:45"], a:1, skill:"vocab-numbers", trick:true, explain:"<b>παρά</b> = minus. Three minus a quarter = 2:45." },
+      { q:"Which day is «Πέμπτη»?", opts:["Tuesday","Thursday","Friday"], a:1, skill:"vocab-daily", explain:"<b>πέντε</b> = five → <b>Πέμπτη</b> = the fifth day, counting from Sunday = Thursday." },
+      { q:"Translate: «αύριο το πρωί»", opts:["tomorrow morning","this morning","yesterday morning"], a:0, skill:"translation" },
+      { q:"Type the Greek for “today”:", opts:[], a:["σήμερα"], type:"fill", skill:"vocab-daily", explain:"<b>σήμερα</b> = today · <b>αύριο</b> = tomorrow · <b>χθες</b> = yesterday." }
     ]},
 
-  { id:"l2L-horas", level:"L2", diff:3, title:"Días y horas", titleEn:"Days & times",
-    body:"<b>Days</b> are lowercase in Spanish, and «on Monday» is just <b>el lunes</b>.<br>• lunes (Mon) · martes (Tue) · miércoles (Wed) · jueves (Thu) · viernes (Fri) · sábado (Sat) · domingo (Sun)<br><br><b>¿A qué hora…?</b> = at what time…? Answer with <b>a las</b> + number:<br>• <b>a la una</b> — at one (one o'clock is special)<br>• <b>a las dos</b> — at two<br>• <b>a las ocho y media</b> — at eight thirty<br><br>Watch these four:<br>• <b>hoy</b> — today<br>• <b>mañana</b> — tomorrow<br>• <b>la mañana</b> — the morning<br>• <b>mañana en la mañana</b> — tomorrow morning<br><br>💡 Pro tip: For a party, «a las ocho» can mean nine-ish. For the ADO bus, it means eight sharp.",
+  { id:"l2L-kateythynseis", level:"L2", diff:3, title:"Αριστερά, δεξιά", titleEn:"Directions",
+    body:"• <b>αριστερά</b> = left · <b>δεξιά</b> = right · <b>ευθεία</b> = straight ahead<br>• <b>κοντά</b> = near · <b>μακριά</b> = far<br>• <b>δίπλα</b> = next to · <b>απέναντι</b> = opposite<br>• <b>στη γωνία</b> = on the corner<br>• <b>πάνω</b> = up / upstairs · <b>κάτω</b> = down / downstairs<br><br>Three questions get you anywhere:<br>• <b>Πού είναι…;</b> = where is…?<br>• <b>Είναι μακριά;</b> = is it far?<br>• <b>Πόσα λεπτά με τα πόδια;</b> = how many minutes on foot?<br><br>💡 Greeks point with the whole hand and say <b>εκεί</b> (there) a lot. Watch the hand more than the words.",
     practice:[
-      { q:"What does «mañana» mean on its own?", opts:["tomorrow","the morning","today"], a:0, skill:"vocab-numbers",
-        explain:"<b>mañana</b> = tomorrow. <b>la mañana</b> = the morning. So <b>mañana en la mañana</b> = tomorrow morning." },
-      { q:"How do you say “at one o'clock”?", opts:["a las uno","a la una","a las una"], a:1, skill:"vocab-numbers",
-        explain:"One o'clock is special: <b>a la una</b>. Every other hour: <b>a las dos, a las tres…</b>" },
-      { q:"¿Qué día sigue después del viernes? (Which day comes after Friday?)", opts:["el jueves","el domingo","el sábado"], a:2, skill:"vocab-numbers" },
-      { q:"Translate: «El domingo a las ocho y media.»", opts:["On Monday at 8:30.","On Sunday at 8:30.","On Sunday at 8:15."], a:1, skill:"translation",
-        explain:"<b>domingo</b> = Sunday, <b>y media</b> = half past (:30)." },
-      { q:"Translate into Spanish: “tomorrow morning”", opts:[], a:["mañana en la mañana","mañana por la mañana"], type:"fill", skill:"translation",
-        explain:"<b>Mañana en la mañana</b> is how Mexicans say it. Yes, the word shows up twice." }
+      { q:"«Δίπλα στο σούπερ μάρκετ» means…", opts:["next to the supermarket","opposite the supermarket","inside the supermarket"], a:0, skill:"vocab-travel" },
+      { q:"«Απέναντι» means…", opts:["opposite","next to","upstairs"], a:0, skill:"vocab-travel" },
+      { q:"How do you ask «Is it far?»", opts:["Είναι μακριά;","Είναι κοντά;","Είναι εδώ;"], a:0, skill:"questions" },
+      { q:"Translate: «δεξιά»", opts:["left","right","straight on"], a:1, skill:"translation" },
+      { q:"Type the Greek for “near / close”:", opts:[], a:["κοντά"], type:"fill", skill:"vocab-travel", explain:"<b>κοντά</b> = near · <b>μακριά</b> = far." }
     ]},
 
-  { id:"l2L-necesito", level:"L2", diff:4, title:"Necesito… / ¿Puedo…?", titleEn:"Needs & permission",
-    body:"Two chunks that solve almost any problem.<br><br><b>Necesito</b> + a thing = I need…<br>• <b>Necesito un taxi.</b> — I need a taxi.<br>• <b>Necesito ayuda.</b> — I need help.<br>• <b>Necesito un cargador para mi celular.</b> — I need a charger for my phone.<br><br><b>¿Puedo</b> + an action? = Can I…?<br>• <b>¿Puedo pagar con tarjeta?</b> — Can I pay by card?<br>• <b>¿Puedo sentarme aquí?</b> — Can I sit here?<br><br><b>¿Se puede…?</b> = Is it OK to…? (asking about the rules)<br>• <b>¿Se puede nadar aquí?</b> — Can you swim here?<br>• <b>¿Se pueden tomar fotos?</b> — Are photos allowed?<br><br>💡 Pro tip: The happiest answers you'll hear are <b>¡claro!</b> (of course!) and <b>sí, se puede</b>. The saddest: <b>solo efectivo</b>, cash only.",
+  { id:"l2L-rimata", level:"L2", diff:4, title:"Ρήματα", titleEn:"Verb endings (present tense)",
+    body:"Greek verbs change their ending for each person. Most follow <b>θέλω</b> (want):<br>• <b>θέλω</b> I want · <b>θέλεις</b> you want · <b>θέλει</b> he / she wants<br>• <b>θέλουμε</b> we want · <b>θέλετε</b> you (all / polite) want · <b>θέλουν</b> they want<br>Same endings: <b>έχω</b> (have), <b>πίνω</b> (drink), <b>μένω</b> (stay / live).<br><br>The second group ends in -άω — like <b>μιλάω</b> (speak):<br>• <b>μιλάω, μιλάς, μιλάει, μιλάμε, μιλάτε, μιλάνε</b><br>Same: <b>πάω</b> (go), <b>αγαπάω</b> (love), <b>ρωτάω</b> (ask).<br><br>And the one you need most, <b>είμαι</b> (be): <b>είμαι, είσαι, είναι, είμαστε, είστε, είναι</b>.<br><br>💡 The -ετε / -άτε ending is also the polite «you»: <b>Θέλετε;</b> <b>Μιλάτε αγγλικά;</b>",
     practice:[
-      { q:"What does «¿Puedo sentarme aquí?» mean?", opts:["Where can I sit?","I need a seat here.","Can I sit here?"], a:2, skill:"phrases" },
-      { q:"How do you say “I need help.”?", opts:["Necesito ayuda.","Puedo ayuda.","Hay ayuda."], a:0, skill:"phrases" },
-      { q:"At the cenote, you want to know if swimming is allowed. What do you ask?", opts:["¿Necesito nadar?","¿Se puede nadar aquí?","¿Hay nadar?"], a:1, skill:"phrases",
-        explain:"<b>¿Se puede…?</b> asks about the rules: is it OK (for anyone) to…?" },
-      { q:"Translate: «Necesito un cargador para mi celular.»", opts:["Can I charge my phone?","Is there a charger here?","I need a charger for my phone."], a:2, skill:"translation",
-        explain:"<b>Necesito</b> = I need. <b>Celular</b> is what Mexicans call a phone." },
-      { q:"Translate into Spanish: “Can I pay by card?”", opts:[], a:["puedo pagar con tarjeta"], type:"fill", skill:"translation",
-        explain:"<b>¿Puedo pagar con tarjeta?</b> If the answer is <b>solo efectivo</b>, it's cash only." }
+      { q:"«Θέλουμε» means…", opts:["I want","we want","they want"], a:1, skill:"verbs" },
+      { q:"Which one means «you speak» (polite)?", opts:["μιλάω","μιλάτε","μιλάνε"], a:1, skill:"verbs" },
+      { q:"Complete: «Εμείς ___ νερό.» (we drink)", opts:["πίνω","πίνουμε","πίνουν"], a:1, skill:"verbs" },
+      { q:"Translate: «Είμαστε από τον Καναδά.»", opts:["We're from Canada.","They're from Canada.","I'm from Canada."], a:0, skill:"translation" },
+      { q:"Type the Greek for “I have”:", opts:[], a:["έχω"], type:"fill", skill:"verbs", explain:"<b>έχω</b> = I have · <b>έχεις</b> = you have · <b>έχει</b> = he / she has." }
     ]}
 
 ];
 
 /* ============================================================================
-   L3
+   L3 — Chatting
    ========================================================================== */
-/* LEVEL L3 — Platicar · Chatting */
 const STORIES_L3 = [
 
-  { id:"l3-que-onda", level:"L3", diff:1, titleEs:"¿Qué onda?", titleEn:"What's up?",
-    text:"Es viernes [en la noche|at night] en CDMX, en [la terraza|the terrace] de un bar. Diego está con [sus amigos|his friends].\n— ¡[Qué onda|what's up]! [Te presento a|let me introduce you to] Mariana y a Toño.\n— ¡[Hola|hi]! [Mucho gusto|nice to meet you].\n— [Igualmente|likewise]. ¿Quieres [una chela|a beer (casual)]? — pregunta Toño.\n— ¡[Sí|yes]! [Gracias|thank you].\n— ¿[De dónde eres|where are you from]? — pregunta Mariana.\n— [Soy de|I'm from] Canadá. [Aprendo español|I'm learning Spanish] con [una app|an app].\n— ¡[No manches|no way]! ¿[Neta|really]? ¡[Hablas muy bien|you speak very well]!\n— [Gracias|thank you]. [Poquito|just a little].\n— ¡[Qué padre|how cool]!\n— [Oye|hey], [güey|dude (friends only)], ¿[vamos por unos tacos|shall we go get tacos]? — le dice Toño a Diego.\n— ¡[Órale|OK / wow / come on]! ¿[Ahorita|right now (or: in a bit)]?\n— Sí, [ahorita|right now (or: in a bit)]. Hay un [lugar|place] muy [chido|cool] [a dos cuadras|two blocks away].\nDiego te dice [en voz baja|quietly]: — «Güey» es «dude». [Solo con amigos|only with friends], ¿eh?",
+  { id:"l3-apopou", level:"L3", diff:1, titleGr:"Από πού είσαι;", titleEn:"Where are you from?",
+    text:"[Ένα μπαρ|a bar] [στη Νάξο|in / to Naxos]. [Ένας Έλληνας|a Greek guy], ο Νίκος, [σου μιλάει|talks to you].\n— [Από πού είσαι|where are you from];\n— [Είμαι από τον Καναδά|I'm from Canada]. [Εσύ|and you];\n— [Από εδώ|from here], [από τη Νάξο|from Naxos]. [Μιλάς πολύ καλά ελληνικά|you speak Greek very well]!\n— [Λίγο|a little]. [Μαθαίνω|I'm learning] [με μια εφαρμογή|with an app].\n— [Μπράβο|well done]! [Πόσο καιρό|how long] [είσαι εδώ|have you been here];\n— [Μία εβδομάδα|one week]. [Φεύγω|I leave] [την Κυριακή|on Sunday].\n— [Κρίμα|what a pity]! [Γεια μας|cheers]!",
     quiz:[
-      { q:"¿Qué es «una chela»?", opts:["a taco","a beer","a friend"], a:1, skill:"mexican", explain:"<b>una chela</b> = a beer — casual Mexican slang." },
-      { q:"¿Qué van a comer los amigos?", opts:["pizza","mole","tacos"], a:2, skill:"comprehension", explain:"Toño says <b>¿vamos por unos tacos?</b> — shall we go get tacos?" },
-      { q:"¿Con quién puedes decir «güey»?", opts:["con tus amigos","con el taxista","con la abuela de Diego"], a:0, skill:"mexican", trick:true, explain:"<b>güey</b> = dude. Diego says: <b>solo con amigos</b> — only with friends." },
-      { q:"Escribe en español: “how cool!”", opts:[], a:["qué padre","qué chido"], type:"fill", skill:"mexican", explain:"<b>¡Qué padre!</b> = how cool! (<b>¡Qué chido!</b> works too.)" }
+      { q:"Where is Nikos from?", opts:["Athens","Naxos","Canada"], a:1, skill:"comprehension" },
+      { q:"How are you learning Greek?", opts:["with a teacher","with an app","from friends"], a:1, skill:"comprehension" },
+      { q:"When do you leave?", opts:["on Saturday","on Sunday","in two weeks"], a:1, skill:"comprehension" },
+      { q:"«Κρίμα!» means…", opts:["what a pity!","cheers!","great!"], a:0, skill:"greek-life" }
     ]},
 
-  { id:"l3-manana", level:"L3", diff:2, titleEs:"Mañana voy a…", titleEn:"Tomorrow I'm going to…",
-    text:"Estás en Oaxaca. Diego [te llama|calls you].\n— ¿[Bueno|hello? (answering the phone)]?\n— ¡[Qué onda|what's up]! Oye, ¿[qué vas a hacer|what are you going to do] [mañana|tomorrow]?\n— [En la mañana|in the morning] [voy a visitar|I'm going to visit] Monte Albán. ¡[Muy temprano|very early], a las siete!\n— ¡[Qué padre|how cool]! ¿Y [después|after that]?\n— Después [voy a comer|I'm going to eat] [una tlayuda|a tlayuda (giant crispy tortilla)] en [el mercado|the market]. Y [voy a comprar|I'm going to buy] [un regalo|a gift] para [mi mamá|my mom].\n— ¿[Vas a ir|are you going to go] a Hierve el Agua?\n— Mañana no. [El viernes|on Friday]. [Voy a ir|I'm going to go] en [un tour|a tour].\n— ¿Y [en la noche|at night]?\n— [No sé|I don't know]. ¿[Por qué|why]?\n— ¡[Vamos a tomar|let's have (a drink)] [un mezcal|a mezcal] en [el centro|downtown]! ¿[Te late|sound good]?\n— ¡[Órale|OK / wow / come on]! ¿[A qué hora|at what time]?\n— A las ocho. [Paso por ti|I'll pick you up] al hotel.\n— ¡[Va|deal / OK]! [Nos vemos|see you].",
+  { id:"l3-xthes", level:"L3", diff:2, titleGr:"Χθες", titleEn:"Yesterday",
+    text:"Η Μαρία [σε ρωτάει|asks you]: «[Τι έκανες|what did you do] [χθες|yesterday];»\n— [Πήγα|I went] [σε ένα χωριό|to a village] [στο βουνό|in the mountains], [την Απείρανθο|Apiranthos]. [Είδα|I saw] [παλιά σπίτια|old houses] [από μάρμαρο|made of marble]. [Έφαγα|I ate] [κατσίκι|goat] [σε μια ταβέρνα|in a taverna] — [πολύ νόστιμο|very tasty]! [Ήπια|I drank] [κίτρο|kitron (a Naxos liqueur)].\n— [Σου άρεσε|did you like it];\n— [Μου άρεσε πολύ|I liked it a lot]! [Αλλά|but] [έκανε πολλή ζέστη|it was very hot].\n— [Πώς πήγες|how did you get there];\n— [Με το λεωφορείο|by bus]. [Γύρισα|I came back] [το βράδυ|in the evening]. [Τέλεια μέρα|a perfect day]!",
     quiz:[
-      { q:"¿Qué vas a visitar mañana en la mañana?", opts:["Hierve el Agua","el centro","Monte Albán"], a:2, skill:"comprehension" },
-      { q:"¿Qué vas a comprar para tu mamá?", opts:["un regalo","una tlayuda","un mezcal"], a:0, skill:"voy-a", explain:"<b>voy a comprar un regalo</b> = I'm going to buy a gift." },
-      { q:"¿Cuándo vas a ir a Hierve el Agua?", opts:["mañana","el viernes","en la noche"], a:1, skill:"comprehension", trick:true, explain:"Diego asks about tomorrow, but you say <b>mañana no. El viernes</b> — not tomorrow, on Friday." },
-      { q:"Escribe en español: “I'm going to eat”", opts:[], a:["voy a comer"], type:"fill", skill:"voy-a", explain:"<b>voy a</b> (I'm going to) + <b>comer</b> (to eat)." }
+      { q:"Where did you go yesterday?", opts:["to the beach","to a mountain village","to Athens"], a:1, skill:"comprehension" },
+      { q:"What did you eat?", opts:["fish","goat","souvlaki"], a:1, skill:"vocab-food" },
+      { q:"How did you get there?", opts:["by bus","by taxi","by scooter"], a:0, skill:"comprehension" },
+      { q:"«Έφαγα» means…", opts:["I ate","I'll eat","I eat"], a:0, skill:"past", explain:"<b>έφαγα</b> = I ate (from <b>τρώω</b>, I eat). Learn the past «I» forms whole." }
     ]},
 
-  { id:"l3-ayer", level:"L3", diff:3, titleEs:"Ayer fui a…", titleEn:"Yesterday I went to…",
-    text:"Es lunes. Estás en [un café|a café] con Diego.\n— ¿Qué tal [el fin de semana|the weekend]? ¿[Qué hiciste|what did you do]?\n— [Ayer|yesterday] [fui a|I went to] Xochimilco con [unos amigos|some friends].\n— ¡[Órale|OK / wow / come on]! ¿Y [qué tal estuvo|how was it]?\n— ¡[Estuvo padre|it was cool]! [Vi|I saw] [las trajineras|the trajineras (colorful boats)], [los mariachis|the mariachis]… ¡y [un ajolote|an axolotl]! [Se llama|its name is] Lolo.\n— ¿[Neta|really]? ¡[Qué chido|how cool]! ¿Y [comiste algo|did you eat anything]?\n— Sí, [comí|I ate] [un elote|corn on the cob] [con limón y chile|with lime and chili]. ¡[Estuvo delicioso|it was delicious]!\n— ¿Y [compraste algo|did you buy anything]?\n— Sí, [compré|I bought] [unas flores|some flowers] para [el cuarto|the room].\n— ¿Y [te gustó|did you like it]?\n— ¡[Me gustó mucho|I liked it a lot]! ¿Y tú? ¿[Qué hiciste|what did you do]?\n— Yo, [nada|nothing]. [Trabajé|I worked] [todo el día|all day].\n— ¡Ay, Diego! [La próxima vez|next time], [vamos juntos|we'll go together].\n— ¡[Va|deal / OK]! Y [te invito|my treat] [un elote|corn on the cob].",
+  { id:"l3-avrio", level:"L3", diff:3, titleGr:"Αύριο", titleEn:"Tomorrow",
+    text:"Ο Νίκος [σε ρωτάει|asks you]: «[Τι θα κάνεις|what will you do] [αύριο|tomorrow];»\n— [Το πρωί|in the morning] [θα πάω|I'll go] [για μπάνιο|for a swim] [στην Αγία Άννα|at Agia Anna beach]. [Το μεσημέρι|at midday] [θα φάω|I'll eat] [ψάρι|fish]. [Το βράδυ|in the evening]… [δεν ξέρω|I don't know]!\n— [Έλα μαζί μας|come with us]! [Το βράδυ|in the evening] [έχει|there is / there are] [πανηγύρι|a village festival] [στο χωριό|in the village]. [Θα έχει|there'll be] [μουσική|music], [χορό|dancing] [και|and / also] [πολύ φαγητό|lots of food].\n— [Τέλεια|perfect / great]! [Τι ώρα|what time];\n— [Θα περάσω να σε πάρω|I'll come and pick you up] [στις εννιά|at nine].\n— [Εντάξει|OK], [τα λέμε|see you]!",
     quiz:[
-      { q:"¿Adónde fuiste ayer?", opts:["a Oaxaca","a Xochimilco","a la playa"], a:1, skill:"past-chunks", explain:"<b>Ayer fui a Xochimilco</b> = yesterday I went to Xochimilco." },
-      { q:"¿Qué compraste?", opts:["un ajolote","un elote","unas flores"], a:2, skill:"past-chunks", trick:true, explain:"You <b>saw</b> (vi) an axolotl and <b>ate</b> (comí) an elote — you <b>bought</b> (compré) flowers." },
-      { q:"¿Qué significa «estuvo padre»?", opts:["it was cool","my dad was there","it was far"], a:0, skill:"mexican", trick:true, explain:"<b>padre</b> = father, but <b>¡qué padre!</b> / <b>estuvo padre</b> = cool / it was cool." },
-      { q:"Escribe en español: “I liked it a lot”", opts:[], a:["me gustó mucho"], type:"fill", skill:"past-chunks", explain:"<b>me gustó</b> = I liked it · <b>mucho</b> = a lot." }
+      { q:"What will you do in the morning?", opts:["go for a swim","eat fish","take the ferry"], a:0, skill:"comprehension" },
+      { q:"What's on in the village in the evening?", opts:["a wedding","a festival","a football match"], a:1, skill:"comprehension", explain:"<b>πανηγύρι</b> = a village feast for a saint's day: live music, dancing and food until dawn." },
+      { q:"What time will Nikos pick you up?", opts:["at 9","at 10","at 7"], a:0, skill:"vocab-numbers" },
+      { q:"«Θα φάω» means…", opts:["I ate","I'll eat","I'm eating"], a:1, skill:"future", explain:"<b>θα</b> + verb = future: <b>θα φάω</b> = I'll eat." }
     ]},
 
-  { id:"l3-muertos", level:"L3", diff:4, titleEs:"Día de Muertos", titleEn:"Day of the Dead",
-    text:"Es [el dos de noviembre|November 2nd] en Oaxaca. Diego te invita a [su casa|his house].\n— [Pasa|come in], pasa. [Mira|look], [esta es|this is] [la ofrenda|the altar (offering)] de mi familia.\nHay [velas|candles], [fotos|photos], [comida|food] y muchas [flores naranjas|orange flowers].\n— ¡[Qué bonita|how pretty]! ¿Quién es [el señor|the man] de la foto?\n— Es [mi abuelo|my grandpa], Don Chema. [Le gustaba mucho|he really liked] [el mole|the mole]. [Por eso|that's why] hay mole en la ofrenda.\n— ¿Y las flores naranjas?\n— Es [el cempasúchil|the marigold]. [Dicen que|they say] su color y su olor [guían a las almas|guide the souls] [a casa|home].\n— [Toma|here you go], [el pan de muerto|Day of the Dead bread]. Es [dulce|sweet].\n— Mmm, ¡[está delicioso|it's delicious]!\n— Y mira [las calaveras|the skulls] [de azúcar|made of sugar]. ¡Esta es [para ti|for you]! [Tiene tu nombre|it has your name].\n— ¡[Qué padre|how cool]! [Muchas gracias|thank you very much].\n— [Para nosotros|for us], este día [no es triste|isn't sad]. Es [una fiesta|a party] para [recordar a la familia|remember the family].",
+  { id:"l3-panigyri", level:"L3", diff:4, titleGr:"Το πανηγύρι", titleEn:"The village festival",
+    text:"[Στο πανηγύρι|at the festival] [έχει|there is / there are] [πολύ κόσμο|lots of people]. [Η μουσική|the music] [παίζει|plays] [δυνατά|loudly].\n— [Έλα|come on / come], [χόρεψε|dance]! [Είναι εύκολο|it's easy]!\n— [Δεν ξέρω να χορεύω|I can't dance]…\n— [Δεν πειράζει|never mind]! [Κράτα το χέρι μου|hold my hand]. [Ένα|one], [δύο|two], [τρία|three]… [Όπα|opa! (a happy shout)]!\nΗ γιαγιά του Νίκου [σου δίνει|gives you] [ένα πιάτο φαγητό|a plate of food].\n— [Φάε|eat], [φάε|eat], [παιδί μου|my dear (literally «my child»)]!\n— [Ευχαριστώ|thank you], [γιαγιά|grandma]! [Είναι πολύ νόστιμο|it's very tasty]!\n[Στις τρεις|at three] [το πρωί|in the morning], [η μουσική|the music] [παίζει|plays] [ακόμα|still].",
     quiz:[
-      { q:"¿Quién es el señor de la foto?", opts:["el papá de Diego","el abuelo de Diego","un amigo de Diego"], a:1, skill:"comprehension", explain:"<b>Es mi abuelo, Don Chema</b> = it's my grandpa." },
-      { q:"¿Cómo se llama la flor naranja?", opts:["la ofrenda","el mole","el cempasúchil"], a:2, skill:"mexican", explain:"<b>el cempasúchil</b> = the marigold, the orange flower of Día de Muertos." },
-      { q:"¿Qué tiene la calavera de azúcar?", opts:["tu nombre","una vela","una foto"], a:0, skill:"comprehension", explain:"<b>Tiene tu nombre</b> = it has your name." },
-      { q:"¿El Día de Muertos es triste?", opts:["sí, es un día muy triste","no, es una fiesta para recordar a la familia","no, es una fiesta para turistas"], a:1, skill:"mexican", trick:true, explain:"Diego says <b>no es triste</b> — it's a party to remember the family." }
+      { q:"Why don't you want to dance at first?", opts:["you're tired","you don't know how","the music is bad"], a:1, skill:"comprehension" },
+      { q:"«Δεν πειράζει» means…", opts:["never mind / no problem","don't touch","not now"], a:0, skill:"greek-life" },
+      { q:"What does grandma keep saying?", opts:["drink, drink!","eat, eat!","dance, dance!"], a:1, skill:"comprehension", explain:"<b>Φάε!</b> = eat! Every Greek grandma's favourite word." },
+      { q:"At 3 a.m. the music…", opts:["stops","is still playing","gets quiet"], a:1, skill:"comprehension" }
     ]},
 
-  { id:"l3-emergencia", level:"L3", diff:5, titleEs:"Una emergencia pequeña", titleEn:"A small emergency",
-    text:"Estás en el hotel en Playa del Carmen. [Buscas|you look for] tu celular… ¡[no está|it's not there]!\n— [Disculpe|excuse me], Sofía, ¿[me puede ayudar|can you help me]? [Perdí mi celular|I lost my phone]. [Tengo|I have] [mi cartera|my wallet], pero el celular no.\n— [No se preocupe|don't worry]. ¿[Vino en taxi|did you come by taxi]?\n— Sí. ¡Ay, [creo que|I think] está en el taxi! ¿[Dónde está|where is] [la policía|the police]?\n— [Primero|first], [vamos a llamar|let's call] a su celular. ¿[Cuál es su número|what's your number]?\nSofía [llama|calls]. [Suena|it rings]… y [alguien|someone] [contesta|answers]:\n— ¿[Bueno|hello? (answering the phone)]?\n— Hola, [habla Sofía|this is Sofía], del hotel. ¿[Quién habla|who's speaking]?\n— Soy Beto, [el taxista|the taxi driver]. ¡[Lo encontré|I found it]! Está en [el asiento|the seat]. [Ahorita|right now (or: in a bit)] [se lo llevo|I'll bring it to you] al hotel.\n[Cuarenta minutos después|forty minutes later] (¡[ahorita|right now (or: in a bit)]!), [llega|arrives] Don Beto con tu celular.\n— ¡[Mil gracias|thanks a million], Don Beto!\n— [De nada|you're welcome]. ¡[Que le vaya bien|all the best]!",
+  { id:"l3-kinito", level:"L3", diff:5, titleGr:"Έχασα το κινητό μου!", titleEn:"I lost my phone!",
+    text:"— [Βοήθεια|help]! [Έχασα το κινητό μου|I lost my phone]!\n— [Ηρέμησε|calm down]. [Πού ήσουν|where were you];\n— [Στο λεωφορείο|on the bus]… [από τη Χώρα|from Chora] [για την Αγία Άννα|to Agia Anna].\n— [Πάμε|let's go] [στο ΚΤΕΛ|to the bus station (KTEL)]. [Ίσως|maybe] [το βρήκε ο οδηγός|the driver found it].\nΣτο ΚΤΕΛ:\n— [Καλησπέρα|good evening]. [Μήπως βρήκατε|did you by any chance find] [ένα μαύρο κινητό|a black phone];\n— [Ένα μαύρο κινητό|a black phone]… [Αυτό|this one];\n— [Ναι|yes]! [Αυτό είναι|that's it]! [Ευχαριστώ πάρα πολύ|thank you so much]!\n— [Τίποτα|don't mention it]. [Πρόσεχε|be careful] [την άλλη φορά|next time]!",
     quiz:[
-      { q:"¿Qué perdiste?", opts:["tu cartera","tu celular","tu boleto"], a:1, skill:"past-chunks", trick:true, explain:"You still have <b>mi cartera</b> (my wallet) — you lost <b>mi celular</b> (my phone)." },
-      { q:"¿Quién contesta el teléfono?", opts:["Don Beto, el taxista","la policía","Diego"], a:0, skill:"comprehension", explain:"<b>Soy Beto, el taxista</b> — the taxi driver found it." },
-      { q:"Don Beto dice «ahorita». ¿Cuándo llega?", opts:["en dos minutos","mañana","en cuarenta minutos"], a:2, skill:"mexican", trick:true, explain:"<b>ahorita</b> = right now… or in a bit. In Mexico, that can mean 40 minutes!" },
-      { q:"Escribe en español: “I lost my phone”", opts:[], a:["perdí mi celular"], type:"fill", skill:"past-chunks", explain:"<b>perdí</b> = I lost · <b>mi celular</b> = my phone." }
+      { q:"What did you lose?", opts:["your wallet","your phone","your passport"], a:1, skill:"comprehension" },
+      { q:"Where did you lose it?", opts:["on the bus","at the beach","in a taverna"], a:0, skill:"comprehension" },
+      { q:"Who probably found it?", opts:["a police officer","the driver","Nikos"], a:1, skill:"comprehension" },
+      { q:"Type the Greek for “help!”:", opts:[], a:["βοήθεια"], type:"fill", skill:"phrases", explain:"<b>Βοήθεια!</b> = help! In a real emergency anywhere in Greece, call <b>112</b> — they speak English." }
     ]}
 ];
 
 const LESSONS_L3 = [
 
-  { id:"l3L-voya", level:"L3", diff:1, title:"Voy a…", titleEn:"The future cheat code",
-    body:"The best trick in Spanish: <b>voy a</b> + any verb in its dictionary form (the one ending in -ar, -er or -ir) = <b>I'm going to…</b> No endings to learn. Ever.<br>• <b>Voy a comer</b> tacos. = I'm going to eat tacos.<br>• <b>Voy a visitar</b> Oaxaca. = I'm going to visit Oaxaca.<br>• <b>Voy a comprar</b> un regalo. = I'm going to buy a gift.<br>• <b>Vamos a…</b> = we're going to… / let's…: <b>¡Vamos a bailar!</b> = Let's dance!<br>• <b>¿Vas a…?</b> = are you going to…? <b>¿Vas a ir a la playa?</b> = Are you going to go to the beach?<br>• <b>¿Qué vas a hacer?</b> = What are you going to do?<br>💡 Pro tip: when a Mexican friend proposes a plan, answer <b>¡Órale!</b> or <b>¡Va!</b> — OK, deal!",
+  { id:"l3L-aoristos", level:"L3", diff:1, title:"Το παρελθόν", titleEn:"The past",
+    body:"The past verbs you'll use every day — learn the «I» form whole:<br>• <b>πήγα</b> I went · <b>ήρθα</b> I came<br>• <b>έφαγα</b> I ate · <b>ήπια</b> I drank<br>• <b>είδα</b> I saw · <b>έκανα</b> I did / made<br>• <b>αγόρασα</b> I bought · <b>κολύμπησα</b> I swam<br>• <b>ήμουν</b> I was · <b>είχα</b> I had<br>• <b>μου άρεσε</b> I liked it<br><br>Then change the ending for the person — <b>-α, -ες, -ε, -αμε, -ατε, -αν</b>:<br><b>πήγα, πήγες, πήγε, πήγαμε, πήγατε, πήγαν</b><br><br>💡 Many past forms jump the stress back or grow an extra ε at the front: <b>τρώω → έφαγα</b>, <b>κάνω → έκανα</b>. That's why it pays to learn them as words, not rules.",
     practice:[
-      { q:"¿Qué significa «Voy a comprar un regalo»?", opts:["I bought a gift","I'm going to buy a gift","I want a gift"], a:1, skill:"voy-a", explain:"<b>voy a</b> + <b>comprar</b> = I'm going to buy." },
-      { q:"How do you say “Let's dance!”?", opts:["¡Voy a bailar!","¿Vas a bailar?","¡Vamos a bailar!"], a:2, skill:"voy-a", explain:"<b>vamos a…</b> = we're going to… / let's…" },
-      { q:"Translate: «¿Qué vas a hacer?»", opts:["What are you going to do?","What did you do?","What do you want?"], a:0, skill:"translation" },
-      { q:"Translate: “I'm going to visit Oaxaca.”", opts:["Fui a Oaxaca.","Voy a visitar Oaxaca.","¿Vas a visitar Oaxaca?"], a:1, skill:"translation" },
-      { q:"Type the Spanish for “I'm going to eat”:", opts:[], a:["voy a comer"], type:"fill", skill:"voy-a", explain:"<b>voy a</b> + <b>comer</b> (to eat) = I'm going to eat." }
+      { q:"«Ήπια» means…", opts:["I drank","I drink","I'll drink"], a:0, skill:"past" },
+      { q:"«Είδα» means…", opts:["I saw","I gave","I knew"], a:0, skill:"past" },
+      { q:"Yesterday we went to the beach: «Χθες ___ στην παραλία.»", opts:["πάμε","πήγαμε","θα πάμε"], a:1, skill:"past" },
+      { q:"Translate: «Αγόρασα ένα καπέλο.»", opts:["I bought a hat.","I want a hat.","I lost a hat."], a:0, skill:"translation" },
+      { q:"Type the Greek for “I ate”:", opts:[], a:["έφαγα"], type:"fill", skill:"past", explain:"<b>έφαγα</b> = I ate." }
     ]},
 
-  { id:"l3L-pasado", level:"L3", diff:2, title:"El pasado en bloques", titleEn:"The past in chunks",
-    body:"Don't build the past tense. Just memorize these 8 blocks whole, like phrases:<br>• <b>fui</b> = I went (<b>fui a</b> = I went to)<br>• <b>comí</b> = I ate<br>• <b>compré</b> = I bought<br>• <b>vi</b> = I saw<br>• <b>hice</b> = I did / I made<br>• <b>estuvo</b> = it was (for experiences)<br>• <b>me gustó</b> = I liked it<br>• <b>perdí</b> = I lost<br>Examples: <b>Ayer fui a Tulum.</b> = Yesterday I went to Tulum. · <b>Comí tacos.</b> · <b>Vi un cenote.</b> · <b>Perdí mi celular.</b> = I lost my phone.<br>💡 Pro tip: when someone asks <b>¿Qué tal estuvo?</b> (How was it?), answer <b>¡Estuvo padre!</b> (it was cool), <b>¡Estuvo delicioso!</b> (it was delicious), <b>Estuvo bien</b> (it was OK) or <b>¡Me gustó mucho!</b> (I liked it a lot).",
+  { id:"l3L-mellon", level:"L3", diff:2, title:"Θα…", titleEn:"The future",
+    body:"Put <b>θα</b> in front of a verb and it's the future:<br>• <b>θα πάω</b> I'll go · <b>θα έρθω</b> I'll come<br>• <b>θα φάω</b> I'll eat · <b>θα πιω</b> I'll drink<br>• <b>θα δω</b> I'll see · <b>θα κάνω</b> I'll do<br><br>Notice: for a one-off plan, the verb after θα is a short form — and it looks a lot like the past without its front: <b>έφαγα → θα φάω</b>, <b>ήπια → θα πιω</b>, <b>είδα → θα δω</b>.<br><br>The same θα is in the polite <b>θα ήθελα</b> (I would like).<br><br>💡 The most Greek answer to any plan: <b>Θα δούμε.</b> — We'll see.",
     practice:[
-      { q:"¿Qué significa «vi»?", opts:["I went","I lost","I saw"], a:2, skill:"past-chunks", explain:"<b>vi</b> = I saw · <b>Vi un cenote</b> = I saw a cenote." },
-      { q:"Diego asks «¿Qué tal estuvo?» about your dinner. You loved it. You say…", opts:["¡Estuvo delicioso!","¡Voy a comer!","Perdí mi celular."], a:0, skill:"past-chunks", explain:"<b>¡Estuvo delicioso!</b> = it was delicious." },
-      { q:"Translate: «Ayer fui a Tulum.»", opts:["Tomorrow I'm going to Tulum.","I like Tulum.","Yesterday I went to Tulum."], a:2, skill:"translation" },
-      { q:"Translate: “I lost my phone.”", opts:["Compré mi celular.","Perdí mi celular.","Vi mi celular."], a:1, skill:"translation" },
-      { q:"Type the Spanish for “I ate”:", opts:[], a:["comí"], type:"fill", skill:"past-chunks", explain:"<b>comí</b> = I ate · <b>Comí tacos</b> = I ate tacos." }
+      { q:"«Θα πάω» means…", opts:["I went","I'll go","I go"], a:1, skill:"future" },
+      { q:"Your friend answers your plan with «Θα δούμε». She means…", opts:["we saw it","we'll see","let's meet"], a:1, skill:"future" },
+      { q:"Tomorrow I'll eat fish: «Αύριο ___ ψάρι.»", opts:["έφαγα","θα φάω","τρώω"], a:1, skill:"future" },
+      { q:"Translate: «Θα έρθεις;»", opts:["Will you come?","Did you come?","Are you home?"], a:0, skill:"translation" },
+      { q:"Type the Greek for “I'll drink”:", opts:[], a:["θα πιω"], type:"fill", skill:"future", explain:"<b>θα πιω</b> = I'll drink. (<b>ήπια</b> = I drank.)" }
     ]},
 
-  { id:"l3L-mexicano", level:"L3", diff:3, title:"Español mexicano", titleEn:"Talk like a local",
-    body:"Mexican Spanish has its own flavor. Drop these and people smile:<br>• <b>¿Mande?</b> = pardon? (the polite Mexican «what?»)<br>• <b>ahorita</b> = right now… or in a bit… or maybe later. The famous flexible word!<br>• <b>¡Qué padre!</b> / <b>¡Qué chido!</b> = how cool!<br>• <b>¡Órale!</b> = OK! / wow! / come on!<br>• <b>¿Neta?</b> = really? (<b>la neta</b> = the truth)<br>• <b>¡No manches!</b> = no way! (mild and friendly)<br>• <b>¿Te late?</b> = sound good? / are you in?<br>• <b>güey</b> = dude. <b>Friends only</b>, never with staff or older people.<br>💡 Pro tip: if a waiter says <b>ahorita</b>, it's coming soon. If a friend says <b>ahorita vengo</b> (be right back), order another taco.",
+  { id:"l3L-ktitika", level:"L3", diff:3, title:"Μου, σου, του", titleEn:"My, your, his…",
+    body:"In Greek, «my / your / his» go AFTER the noun:<br>• <b>το κινητό μου</b> my phone<br>• <b>το κινητό σου</b> your phone<br>• <b>το κινητό του</b> his phone · <b>το κινητό της</b> her phone<br>• <b>το κινητό μας</b> our phone<br>• <b>το κινητό σας</b> your phone (polite, or you all)<br>• <b>το κινητό τους</b> their phone<br><br>The same little words also mean «to me / to you…»: <b>μου αρέσει</b> (it pleases me), <b>σου δίνω</b> (I give you), <b>πες μου</b> (tell me).<br><br>💡 You've known this since day one: <b>γεια σου</b> is literally «your health», <b>γεια μας</b> «our health».",
     practice:[
-      { q:"¿Qué significa «¿neta?»?", opts:["really?","nice","the net"], a:0, skill:"mexican", explain:"<b>¿Neta?</b> = really? · <b>la neta</b> = the truth." },
-      { q:"How do you say “how cool!” in Mexico?", opts:["¡No manches!","¡Qué padre!","¿Mande?"], a:1, skill:"mexican", explain:"<b>¡Qué padre!</b> or <b>¡Qué chido!</b> = how cool!" },
-      { q:"Translate: «¿Tacos? ¿Te late?»", opts:["Tacos? Are you late?","Tacos? Really?","Tacos? Sound good?"], a:2, skill:"translation", explain:"<b>¿Te late?</b> = sound good? / are you in? — nothing to do with being late!" },
-      { q:"Translate: “No way!” (friendly)", opts:["¡No manches!","¡Órale!","Ahorita."], a:0, skill:"translation" },
-      { q:"Who can you call «güey»?", opts:["the hotel receptionist","your friend Diego","Diego's grandmother"], a:1, skill:"mexican", trick:true, explain:"<b>güey</b> = dude — <b>friends only</b>, never with staff or older people." }
+      { q:"«Το διαβατήριό μου» means…", opts:["my passport","your passport","our passport"], a:0, skill:"pronouns" },
+      { q:"«Η μητέρα της» means…", opts:["her mother","his mother","your mother"], a:0, skill:"pronouns" },
+      { q:"Which one is «my phone»?", opts:["το κινητό μου","μου το κινητό","το μου κινητό"], a:0, skill:"pronouns", explain:"The little word goes after the noun: <b>το κινητό μου</b>." },
+      { q:"Translate: «Το σπίτι μας είναι εδώ.»", opts:["Our house is here.","Your house is here.","My house is here."], a:0, skill:"translation" },
+      { q:"Type the Greek for “my phone” (phone = κινητό):", opts:[], a:["το κινητό μου","κινητό μου"], type:"fill", skill:"pronouns", explain:"<b>το κινητό μου</b> = my phone." }
     ]},
 
-  { id:"l3L-soy-estoy", level:"L3", diff:4, title:"Soy… / Estoy…", titleEn:"I am… (two ways)",
-    body:"Spanish has two ways to say «I am». Learn them as chunks.<br><b>Soy…</b> = who you are:<br>• <b>Soy Ana.</b> = I'm Ana.<br>• <b>Soy de Canadá.</b> = I'm from Canada.<br>• <b>Soy maestro / maestra.</b> = I'm a teacher.<br><b>Estoy…</b> = how or where you are right now:<br>• <b>Estoy bien.</b> = I'm good.<br>• <b>Estoy cansado / cansada.</b> = I'm tired (man / woman).<br>• <b>Estoy en el hotel.</b> = I'm at the hotel.<br>• <b>Estoy en Oaxaca.</b> = I'm in Oaxaca.<br>Quick test: could it change by tomorrow? Use <b>estoy</b>.<br>💡 Pro tip: no «un» with jobs — say <b>soy maestra</b>, not «soy una maestra». And if you mix up soy and estoy, people still understand. Smile and keep talking.",
+  { id:"l3L-eimai", level:"L3", diff:4, title:"Πώς είσαι;", titleEn:"How you feel",
+    body:"Feelings with <b>είμαι</b> (I am) — the ending shows if you're a man or a woman:<br>• <b>Είμαι κουρασμένος</b> / <b>κουρασμένη</b> = I'm tired<br>• <b>Είμαι χαρούμενος</b> / <b>χαρούμενη</b> = I'm happy<br><br>But some feelings are verbs:<br>• <b>πεινάω</b> = I'm hungry · <b>διψάω</b> = I'm thirsty<br>• <b>κρυώνω</b> = I'm cold · <b>ζεσταίνομαι</b> = I'm hot<br><br>The weather «makes»: <b>κάνει ζέστη</b> = it's hot · <b>κάνει κρύο</b> = it's cold<br>And <b>έχω</b> (I have): <b>έχω πονοκέφαλο</b> = I have a headache · <b>έχεις δίκιο</b> = you're right<br><br>💡 Don't say «είμαι ζέστη» — that's «I am heat». Say <b>ζεσταίνομαι</b>, or point at the sun and say <b>κάνει ζέστη!</b>",
     practice:[
-      { q:"¿Qué significa «Estoy cansada»?", opts:["I'm from Cansada","I'm tired","I'm a teacher"], a:1, skill:"ser-estar", explain:"<b>Estoy cansada</b> = I'm tired (a woman says it). How you are right now → <b>estoy</b>." },
-      { q:"Translate: “I'm from Canada.”", opts:["Soy de Canadá.","Estoy de Canadá.","Estoy en Canadá."], a:0, skill:"translation", explain:"Where you're from = who you are → <b>soy de…</b>" },
-      { q:"You're at the hotel right now. You say…", opts:["Soy el hotel.","Soy en el hotel.","Estoy en el hotel."], a:2, skill:"ser-estar", explain:"Where you are right now → <b>estoy en…</b>" },
-      { q:"Translate: «Soy maestra y estoy en Oaxaca.»", opts:["I'm tired and I'm in Oaxaca.","I'm a teacher and I'm in Oaxaca.","I'm from Oaxaca and I'm a teacher."], a:1, skill:"translation" },
-      { q:"Type the Spanish for “I'm tired” (a man says it):", opts:[], a:["estoy cansado"], type:"fill", skill:"ser-estar", explain:"<b>Estoy cansado</b> (man) · <b>Estoy cansada</b> (woman)." }
+      { q:"«Πεινάω» means…", opts:["I'm hungry","I'm thirsty","I'm tired"], a:0, skill:"states" },
+      { q:"The weather is really hot. You say…", opts:["Κάνει ζέστη.","Είμαι ζέστη.","Έχω ζέστη."], a:0, skill:"states" },
+      { q:"A woman says she's tired:", opts:["Είμαι κουρασμένος.","Είμαι κουρασμένη.","Έχω κουρασμένη."], a:1, skill:"states" },
+      { q:"Translate: «Έχεις δίκιο.»", opts:["You're right.","You're tired.","You have a dog."], a:0, skill:"translation" },
+      { q:"Type the Greek for “I'm thirsty”:", opts:[], a:["διψάω","διψώ"], type:"fill", skill:"states", explain:"<b>διψάω</b> = I'm thirsty · <b>πεινάω</b> = I'm hungry." }
     ]}
+
 ];
 
 /* ============================================================================
-   ASSEMBLY — the engine reads these three.
+   L4 — Beyond Duolingo
    ========================================================================== */
-const STORIES = [...STORIES_L0, ...STORIES_L1, ...STORIES_L2, ...STORIES_L3];
-const LESSONS = [...LESSONS_L0, ...LESSONS_L1, ...LESSONS_L2, ...LESSONS_L3];
+const STORIES_L4 = [
+
+  { id:"l4-tilefono", level:"L4", diff:1, titleGr:"Κράτηση στο τηλέφωνο", titleEn:"Booking by phone",
+    text:"— [Εμπρός|hello? (answering the phone)];\n— [Γεια σας|hello / goodbye (polite)]. [Θα ήθελα να κλείσω|I'd like to book] [ένα τραπέζι|a table] [για απόψε|for tonight].\n— [Βεβαίως|of course]. [Για πόσα άτομα|for how many people];\n— [Για τέσσερα άτομα|for four people], [γύρω στις εννιά|around nine].\n— [Στις εννιά|at nine] [είμαστε γεμάτοι|we're full]. [Μπορείτε στις δέκα|can you make it at ten];\n— [Ναι|yes], [κανένα πρόβλημα|no problem]. [Θα μπορούσαμε να καθίσουμε|could we sit] [έξω|outside], [κοντά στη θάλασσα|near the sea];\n— [Θα προσπαθήσω|I'll try]. [Το όνομά σας|your name];\n— Sam. [Ευχαριστώ πολύ|thank you very much]!\n— [Εμείς ευχαριστούμε|thank YOU (literally «we thank you»)]. [Τα λέμε|see you] [απόψε|tonight]!",
+    quiz:[
+      { q:"How many people is the table for?", opts:["two","four","nine"], a:1, skill:"comprehension" },
+      { q:"Why can't you have 9:00?", opts:["they're closed","they're full","it's too early"], a:1, skill:"comprehension" },
+      { q:"What time is the booking in the end?", opts:["9:00","10:00","10:30"], a:1, skill:"vocab-numbers" },
+      { q:"«Θα μπορούσαμε να καθίσουμε έξω;» is…", opts:["a polite request to sit outside","an order to sit outside","a question about the weather"], a:0, skill:"na", explain:"<b>Θα μπορούσαμε να…;</b> = could we…? The softest way to ask for anything." }
+    ]},
+
+  { id:"l4-gnomi", level:"L4", diff:2, titleGr:"Ποιο νησί είναι το καλύτερο;", titleEn:"Which island is the best?",
+    text:"Ο Νίκος [και|and / also] η Μαρία [διαφωνούν|disagree].\nΝίκος: [Νομίζω ότι|I think that] η Νάξος [είναι το καλύτερο νησί|is the best island]. [Έχει τα πάντα|it has everything]: [βουνά|mountains], [παραλίες|beaches], [φαγητό|food].\nΜαρία: [Δεν συμφωνώ|I don't agree]. Η Σαντορίνη [είναι πιο όμορφη|is more beautiful].\nΝίκος: [Πιο όμορφη|more beautiful], [ναι|yes]· [αλλά|but] [πολύ πιο ακριβή|much more expensive] [και|and / also] [γεμάτη τουρίστες|full of tourists]!\nΜαρία: [Εντάξει|OK], [έχεις δίκιο|you're right] [σ' αυτό|about that]. [Εσύ τι λες|what do you say];\n— [Κατά τη γνώμη μου|in my opinion]… [το καλύτερο νησί|the best island] [είναι εκεί που είναι οι φίλοι σου|is wherever your friends are]!\n— [Ωραία το είπες|nicely put]!",
+    quiz:[
+      { q:"Which island does Nikos prefer?", opts:["Santorini","Naxos","Paros"], a:1, skill:"comprehension" },
+      { q:"Nikos admits that Santorini is…", opts:["more beautiful","cheaper","quieter"], a:0, skill:"comprehension" },
+      { q:"«Δεν συμφωνώ» means…", opts:["I don't agree","I don't understand","I don't care"], a:0, skill:"opinions" },
+      { q:"Type the Greek for “I think that…”:", opts:[], a:["νομίζω ότι","νομίζω πως"], type:"fill", skill:"opinions", explain:"<b>Νομίζω ότι…</b> (or <b>νομίζω πως…</b>) = I think that…" }
+    ]},
+
+  { id:"l4-minima", level:"L4", diff:3, titleGr:"Ένα μήνυμα", titleEn:"A message",
+    text:"[Ένα μήνυμα|a message] [από τη Μαρία|from Maria]:\n«[Γεια|hi]! [Θέλεις να πάμε για καφέ|do you want to go for a coffee] [αύριο|tomorrow]; [Πρέπει να δουλέψω|I have to work] [το πρωί|in the morning], [αλλά|but] [μπορούμε να βρεθούμε|we can meet] [στις πέντε|at five].»\n[Απαντάς|you reply]:\n«[Ναι|yes], [θέλω πολύ|I'd love to]! [Πρέπει να αγοράσω|I have to buy] [δώρα|gifts] [για την οικογένειά μου|for my family] [πριν φύγω|before I leave]. [Μπορείς να με βοηθήσεις|can you help me];»\n«[Φυσικά|of course]! [Ξέρω|I know] [ένα μαγαζί|a shop] [με τοπικά προϊόντα|with local products]. [Φέρε|bring] [ένα μεγάλο σακίδιο|a big backpack]! 😄»",
+    quiz:[
+      { q:"Why can't Maria meet in the morning?", opts:["she has to work","she's at the beach","she's asleep"], a:0, skill:"comprehension" },
+      { q:"What time can you meet?", opts:["5:00","3:00","7:00"], a:0, skill:"vocab-numbers" },
+      { q:"What do you need to buy?", opts:["gifts for your family","a backpack","a ferry ticket"], a:0, skill:"comprehension" },
+      { q:"«Πρέπει να δουλέψω» means…", opts:["I have to work","I want to work","I worked"], a:0, skill:"na", explain:"<b>πρέπει να</b> + verb = I have to / must." }
+    ]},
+
+  { id:"l4-pasxa", level:"L4", diff:4, titleGr:"Χριστός Ανέστη!", titleEn:"Greek Easter",
+    text:"[Το Πάσχα|Easter] [είναι η μεγαλύτερη γιορτή|is the biggest celebration] [στην Ελλάδα|in / to Greece].\n[Το Μεγάλο Σάββατο|on Holy Saturday], [λίγο πριν τα μεσάνυχτα|just before midnight], [όλοι|everyone] [πηγαίνουν στην εκκλησία|goes to church] [με ένα κερί|with a candle].\n[Στις δώδεκα|at twelve] [ο παπάς|the priest] [λέει|says]: «[Χριστός Ανέστη|Christ is risen]!» [και|and / also] [όλοι|everyone] [απαντούν|answer]: «[Αληθώς Ανέστη|truly He is risen]!»\n[Μετά|then / after] [τσουγκρίζουν|they crack together] [κόκκινα αυγά|red eggs] [και|and / also] [τρώνε|eat] [μαγειρίτσα|magiritsa (Easter soup)].\n[Την Κυριακή|on Sunday] [ψήνουν|they roast] [αρνί|lamb] [στη σούβλα|on the spit] [όλη μέρα|all day].",
+    quiz:[
+      { q:"When do people go to church with candles?", opts:["Saturday, just before midnight","Sunday morning","Friday at noon"], a:0, skill:"comprehension" },
+      { q:"Someone says «Χριστός Ανέστη!». You answer…", opts:["Αληθώς Ανέστη!","Καλό Πάσχα!","Γεια μας!"], a:0, skill:"greek-life", explain:"From midnight on Easter Saturday, the greeting is <b>Χριστός Ανέστη!</b> and the answer is <b>Αληθώς Ανέστη!</b> Before that, people wish each other <b>Καλό Πάσχα</b>." },
+      { q:"What colour are the Easter eggs?", opts:["red","gold","blue"], a:0, skill:"comprehension" },
+      { q:"What's roasted on the spit on Sunday?", opts:["lamb","goat","pork"], a:0, skill:"vocab-food" }
+    ]},
+
+  { id:"l4-paidi", level:"L4", diff:5, titleGr:"Όταν ήμουν παιδί", titleEn:"When I was a kid",
+    text:"Ο Νίκος [θυμάται|remembers]:\n«[Όταν ήμουν παιδί|when I was a kid], [κάθε καλοκαίρι|every summer] [πήγαινα|I used to go] [στο χωριό της γιαγιάς μου|to my grandma's village]. [Ξυπνούσα νωρίς|I'd wake up early] [και|and / also] [έτρωγα|I'd eat] [ψωμί με μέλι|bread with honey]. [Μετά|then / after] [έπαιζα|I'd play] [ποδόσφαιρο|football] [με τους φίλους μου|with my friends] [όλη μέρα|all day].\n[Ένα καλοκαίρι|one summer] [έσπασα|I broke] [το παράθυρο του παπά|the priest's window] [με την μπάλα|with the ball]! [Η γιαγιά μου|my grandma] [θύμωσε πολύ|got really angry]… [αλλά|but] [μετά|then / after] [μου έδωσε|she gave me] [ένα γλυκό|a dessert]. [Τι ωραία χρόνια|what lovely years]!»",
+    quiz:[
+      { q:"Where did Nikos spend his summers as a kid?", opts:["at the beach","at his grandma's village","in Athens"], a:1, skill:"comprehension" },
+      { q:"What did he eat in the mornings?", opts:["bread with honey","eggs","cake"], a:0, skill:"comprehension" },
+      { q:"What happened one summer?", opts:["he broke the priest's window","he lost his ball","he got lost"], a:0, skill:"comprehension" },
+      { q:"«Κάθε καλοκαίρι πήγαινα…» means…", opts:["every summer I used to go…","one summer I went…","every summer I'll go…"], a:0, skill:"imperfect", explain:"<b>πήγαινα</b> = I used to go (again and again). <b>πήγα</b> = I went (once)." }
+    ]}
+];
+
+const LESSONS_L4 = [
+
+  { id:"l4L-na", level:"L4", diff:1, title:"Να + ρήμα", titleEn:"«To do» in Greek: να",
+    body:"Greek has no «to go», «to eat». Instead it says <b>να</b> + the verb, with the person on it:<br>• <b>Θέλω να πάω</b> = I want to go<br>• <b>Πρέπει να φύγω</b> = I have to leave<br>• <b>Μπορώ να έρθω;</b> = Can I come?<br>• <b>Ξέρω να μαγειρεύω</b> = I know how to cook<br><br>After να, a one-off action takes the same short form as after θα: <b>θα πάω → να πάω</b>, <b>θα φάω → να φάω</b>, <b>θα δω → να δω</b>, <b>θα αγοράσω → να αγοράσω</b>.<br><br>Both verbs change with the person: <b>θέλεις να πας</b> (you want to go), <b>θέλουμε να πάμε</b> (we want to go).<br><br>💡 να alone makes a soft wish or command: <b>Να προσέχεις!</b> (take care!), <b>Να είστε καλά!</b> (be well!).",
+    practice:[
+      { q:"«Πρέπει να φύγω» means…", opts:["I have to leave","I want to leave","I left"], a:0, skill:"na" },
+      { q:"Complete: «Θέλω ___ στην παραλία.» (I want to go)", opts:["πάω","να πάω","να πήγα"], a:1, skill:"na" },
+      { q:"Complete: «Θέλουμε να ___.» (we want to eat)", opts:["φάμε","φάω","έφαγα"], a:0, skill:"na", explain:"Both verbs take the person: <b>θέλουμε να φάμε</b> = we want to eat." },
+      { q:"Translate: «Μπορείς να με βοηθήσεις;»", opts:["Can you help me?","Do you want to help me?","Did you help me?"], a:0, skill:"translation" },
+      { q:"Type the Greek for “I want to go”:", opts:[], a:["θέλω να πάω"], type:"fill", skill:"na", explain:"<b>θέλω να πάω</b> = I want to go." }
+    ]},
+
+  { id:"l4L-gnomi", level:"L4", diff:2, title:"Νομίζω ότι…", titleEn:"Giving your opinion",
+    body:"• <b>Νομίζω ότι…</b> / <b>Νομίζω πως…</b> = I think that…<br>• <b>Πιστεύω ότι…</b> = I believe that…<br>• <b>Κατά τη γνώμη μου…</b> = in my opinion…<br>• <b>Συμφωνώ</b> = I agree · <b>Δεν συμφωνώ</b> = I disagree<br>• <b>Έχεις δίκιο</b> = you're right · <b>Δεν έχεις άδικο</b> = you're not wrong<br>• <b>Εξαρτάται</b> = it depends<br>• <b>Σίγουρα</b> = definitely · <b>Μάλλον</b> = probably · <b>Δεν νομίζω</b> = I don't think so<br><br><b>Comparing:</b> <b>πιο</b> + adjective = more: <b>πιο όμορφη</b> (more beautiful), <b>πιο ακριβό</b> (more expensive). The best: <b>ο καλύτερος</b> / <b>η καλύτερη</b> / <b>το καλύτερο</b>.<br><br>💡 Greeks love a good debate over coffee — disagreeing loudly is friendly, not rude.",
+    practice:[
+      { q:"«Εξαρτάται» means…", opts:["it depends","it's expensive","it's finished"], a:0, skill:"opinions" },
+      { q:"«Μάλλον» means…", opts:["probably","more","never"], a:0, skill:"opinions" },
+      { q:"Your friend makes a good point. You say…", opts:["Έχεις δίκιο.","Δεν συμφωνώ.","Εξαρτάται."], a:0, skill:"opinions" },
+      { q:"Translate: «Η Αθήνα είναι πιο μεγάλη.»", opts:["Athens is bigger.","Athens is the biggest.","Athens is very big."], a:0, skill:"translation" },
+      { q:"Type the Greek for “I agree”:", opts:[], a:["συμφωνώ"], type:"fill", skill:"opinions", explain:"<b>συμφωνώ</b> = I agree — think «symphony», sounding together." }
+    ]},
+
+  { id:"l4L-paratatikos", level:"L4", diff:3, title:"Πήγα ή πήγαινα;", titleEn:"«I went» or «I used to go»?",
+    body:"Greek has two pasts, and the difference is like English «I went» vs «I used to go / I was going»:<br>• <b>πήγα</b> = I went (once, done) · <b>πήγαινα</b> = I used to go / I was going<br>• <b>έφαγα</b> = I ate · <b>έτρωγα</b> = I used to eat / I was eating<br>• <b>έπαιξα</b> = I played · <b>έπαιζα</b> = I used to play<br>• <b>είδα</b> = I saw · <b>έβλεπα</b> = I used to watch / I was watching<br><br><b>Telling a story:</b> the background in the «used to / was -ing» form, the events in the simple one:<br><b>Έβλεπα τηλεόραση όταν χτύπησε το τηλέφωνο.</b> = I was watching TV when the phone rang.<br><br>💡 Clue words: <b>κάθε μέρα</b>, <b>κάθε καλοκαίρι</b>, <b>συνήθως</b> (usually) → «used to». <b>Χθες</b>, <b>μια φορά</b> (once) → the simple past.",
+    practice:[
+      { q:"«Κάθε μέρα έτρωγα ψάρι» means…", opts:["Every day I used to eat fish.","Every day I'll eat fish.","I ate a fish once."], a:0, skill:"imperfect" },
+      { q:"Once, yesterday: «Χθες ___ στο μουσείο.»", opts:["πήγα","πήγαινα","πάω"], a:0, skill:"imperfect", explain:"One finished trip yesterday → <b>πήγα</b>." },
+      { q:"The background: «___ στο μπαλκόνι όταν άρχισε η βροχή.» (I was sitting)", opts:["Κάθισα","Καθόμουν","Θα κάτσω"], a:1, skill:"imperfect", explain:"Ongoing background → <b>καθόμουν</b> (I was sitting) when the rain started." },
+      { q:"Translate: «Όταν ήμουν μικρός, έπαιζα μπάλα.»", opts:["When I was little, I used to play ball.","When I was little, I played ball once.","When I'm older, I'll play ball."], a:0, skill:"translation" },
+      { q:"Type the Greek for “I used to go” (from πάω):", opts:[], a:["πήγαινα"], type:"fill", skill:"imperfect", explain:"<b>πήγαινα</b> = I used to go · <b>πήγα</b> = I went." }
+    ]},
+
+  { id:"l4L-dopios", level:"L4", diff:4, title:"Σαν ντόπιος", titleEn:"Sound like a local",
+    body:"The words Duolingo never taught you — you'll hear them every five minutes:<br>• <b>Έλα!</b> = come on! / hi! (answering the phone) / no way!<br>• <b>Άντε!</b> = go on! / hurry up! / finally!<br>• <b>Ρε</b> = hey, mate — friends only: <b>έλα ρε!</b><br>• <b>Τέλεια!</b> = perfect! · <b>Κανένα πρόβλημα</b> = no problem<br>• <b>Σιγά σιγά</b> = slowly, slowly · but <b>Σιγά!</b> on its own, with a look = «big deal!»<br>• <b>Πω πω!</b> = wow / oh my<br>• <b>Χαλαρά</b> = chill, relax<br>• <b>Τα λέμε</b> = see you · <b>Καλή συνέχεια</b> = have a good rest of the day<br>• <b>Χρόνια πολλά!</b> = happy birthday / name day / holiday — said on any celebration<br><br>Two words with no English match:<br>• <b>κέφι</b> = joyful high spirits, the mood when the dancing starts<br>• <b>φιλότιμο</b> = pride in doing right by others<br><br>💡 Careful with an open palm pushed toward someone's face (the <b>μούντζα</b>) — it's a rude gesture. A normal wave is fine.",
+    practice:[
+      { q:"Your friend calls and answers with «Έλα!». It means…", opts:["hi! / go ahead!","come here right now!","goodbye!"], a:0, skill:"greek-life" },
+      { q:"«Χρόνια πολλά!» is said…", opts:["on birthdays, name days and holidays","when someone sneezes","when you leave"], a:0, skill:"greek-life" },
+      { q:"Your friend brags about a tiny fish he caught. You tease him…", opts:["Σιγά!","Μπράβο!","Περαστικά!"], a:0, skill:"greek-life", explain:"<b>Σιγά!</b> with a raised eyebrow = «big deal!» (<b>Περαστικά</b> = get well soon.)" },
+      { q:"Translate: «Κανένα πρόβλημα.»", opts:["No problem.","No way.","Not now."], a:0, skill:"translation" },
+      { q:"Type the Greek for “see you!” (casual):", opts:[], a:["τα λέμε"], type:"fill", skill:"greek-life", explain:"<b>Τα λέμε!</b> = see you! (literally «we'll talk»)." }
+    ]}
+
+];
+
+/* ============================================================================
+   THE LEVEL CHECK (placement) — first open, and ⚙ Settings ▸ Retake.
+   Self-contained questions (no story needed), 6 per level; the engine draws 3 per
+   level, shuffles the options and adds "I don't know". Passing a level = 2 right;
+   the learner is placed at the first level they don't pass (app.js, PLACEMENT).
+   Rules: four options; exactly one right; alphabet-reading items need notr:true.
+   ========================================================================== */
+const PLACEMENT = {
+  L0:[
+    { q:"Read this sign: ΤΑΞΙ", opts:["taxi","tax","toxic","tie"], a:0, notr:true },
+    { q:"How does «νερό» sound?", opts:["neró","veró","heró","peró"], a:0, notr:true },
+    { q:"Which letter makes the «r» sound?", opts:["Ρ","Π","Β","Η"], a:0, notr:true },
+    { q:"What does «ευχαριστώ» mean?", opts:["thank you","please","sorry","goodbye"], a:0 },
+    { q:"What does «ναι» mean?", opts:["yes","no","nine","hi"], a:0 },
+    { q:"«Καλημέρα» means…", opts:["good morning","good night","good luck","thank you"], a:0 }
+  ],
+  L1:[
+    { q:"«Θα ήθελα έναν καφέ» means…", opts:["I'd like a coffee","I had a coffee","I don't like coffee","The coffee is cold"], a:0 },
+    { q:"«Πόσο κάνει;» means…", opts:["How much is it?","How are you?","Where is it?","What time is it?"], a:0 },
+    { q:"Which is correct?", opts:["η μπύρα","ο μπύρα","το μπύρα","τα μπύρα"], a:0 },
+    { q:"«Δεκαπέντε» is…", opts:["15","50","5","12"], a:0 },
+    { q:"«Έχετε τουαλέτα;» means…", opts:["Do you have a toilet?","Where's the toilet?","Is the toilet free?","I need a toilet."], a:0 },
+    { q:"«Ο λογαριασμός» is…", opts:["the bill","the menu","the waiter","the table"], a:0 }
+  ],
+  L2:[
+    { q:"Complete: «Εμείς ___ ελληνικά.» (we speak)", opts:["μιλάμε","μιλάω","μιλάνε","μιλάς"], a:0 },
+    { q:"«Μου αρέσουν οι ελιές» means…", opts:["I like olives","I'd like olives","I have olives","I don't like olives"], a:0 },
+    { q:"«Τρεις παρά τέταρτο» is…", opts:["2:45","3:15","3:45","4:45"], a:0 },
+    { q:"«Πηγαίνετε ευθεία και μετά δεξιά» means…", opts:["Go straight, then right","Go right, then straight","Turn left, then right","It's straight on, on the right"], a:0 },
+    { q:"«Παρασκευή» is…", opts:["Friday","Tuesday","Sunday","Thursday"], a:0 },
+    { q:"«Για πακέτο» means…", opts:["to go (takeaway)","for the parcel","by post","in a bag"], a:0 }
+  ],
+  L3:[
+    { q:"«Χθες πήγαμε στην παραλία» means…", opts:["Yesterday we went to the beach","Tomorrow we'll go to the beach","We go to the beach every day","Yesterday they went to the beach"], a:0 },
+    { q:"Complete: «Αύριο ___ ψάρι.» (I'll eat)", opts:["θα φάω","έφαγα","τρώω","θα έφαγα"], a:0 },
+    { q:"«Το κινητό της» means…", opts:["her phone","his phone","my phone","your phone"], a:0 },
+    { q:"«Πεινάω» means…", opts:["I'm hungry","I'm thirsty","I'm tired","I'm cold"], a:0 },
+    { q:"«Είδα» is the past of…", opts:["βλέπω (see)","δίνω (give)","ξέρω (know)","λέω (say)"], a:0 },
+    { q:"«Κάνει κρύο» means…", opts:["It's cold","I'm cold","It's cool!","It makes ice"], a:0 }
+  ],
+  L4:[
+    { q:"Complete: «Πρέπει ___ αύριο.» (I have to leave)", opts:["να φύγω","φύγω","θα φύγω","έφυγα"], a:0 },
+    { q:"«Όταν ήμουν μικρή, έπαιζα πιάνο» means…", opts:["When I was little, I used to play the piano","When I was little, I played the piano once","When I'm older, I'll play the piano","I was playing the piano a moment ago"], a:0 },
+    { q:"«Εξαρτάται» means…", opts:["it depends","it's included","it's expensive","it's finished"], a:0 },
+    { q:"«Θα μπορούσατε να μου φέρετε νερό;» is…", opts:["a polite request for water","an order for water","a complaint about the water","a question about the price of water"], a:0 },
+    { q:"«Χρόνια πολλά!» is said…", opts:["on birthdays, name days and holidays","when someone sneezes","when you leave","when you meet someone"], a:0 },
+    { q:"Choose the right word: «Νομίζω ___ έχεις δίκιο.»", opts:["ότι","να","θα","που"], a:0 }
+  ]
+};
+
+/* ============================================================================
+   ASSEMBLY — the engine reads these.
+   ========================================================================== */
+const STORIES = [...STORIES_L0, ...STORIES_L1, ...STORIES_L2, ...STORIES_L3, ...STORIES_L4];
+const LESSONS = [...LESSONS_L0, ...LESSONS_L1, ...LESSONS_L2, ...LESSONS_L3, ...LESSONS_L4];
 
 /* Expose for the app (works as plain <script> include). */
 window.SKILLS = SKILLS;
 window.STORIES = STORIES;
 window.LESSONS = LESSONS;
+window.PLACEMENT = PLACEMENT;

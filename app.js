@@ -183,7 +183,7 @@ const VIEWS = ["home","reading","quiz","lesson","results","placement","match"];
 /* The WINDOW is the scroller (the .scroll views grow with content), so setting a
    view's scrollTop does nothing. Without the scrollTo, tapping a story low in the
    list opened it mid-page on the glossary. (Same in Czech Quest.) */
-function show(id){ VIEWS.forEach(v=>document.getElementById(v).classList.toggle("hidden", v!==id)); window.scrollTo(0,0); }
+function show(id){ VIEWS.forEach(v=>document.getElementById(v).classList.toggle("hidden", v!==id)); document.body.dataset.view=id; window.scrollTo(0,0); }
 
 /* ===== VOCAB / SRS ===== */
 function enrollWord(gr, box){
@@ -509,7 +509,7 @@ function speakIndex(i, auto){
 function playPause(){
   const tip=document.getElementById("rTip");
   if(!("speechSynthesis" in window)){ if(tip) tip.textContent="Read-aloud isn't supported here."; return; }
-  if(!grVoice() && tip) tip.textContent="No Spanish voice on this device yet — on iPhone add “Spanish (Mexico)” in Settings ▸ Accessibility ▸ Spoken Content ▸ Voices.";
+  if(!grVoice() && tip) tip.textContent="No Greek voice found on this device yet — on iPhone: Settings ▸ Accessibility ▸ Spoken Content ▸ Voices ▸ Greek ▸ Melina. (⚙ Settings ▸ Voice has the details.)";
   if(!words.length) return;
   if(playing){ playing=false; speechSynthesis.cancel(); updatePlayerUI(); }
   else { playing=true; updatePlayerUI(); speakIndex(wIndex, true); }
@@ -525,7 +525,7 @@ function stepWord(d){
 function toggleSlow(){
   const normal = S.rate || 1;               // the learner's chosen speed, from Settings
   playRate = (playRate===normal) ? 0.6 : normal;
-  const b=document.getElementById("slowBtn"); if(b) b.textContent = (playRate===normal) ? "🐢 Lento" : "🐇 Normal";
+  const b=document.getElementById("slowBtn"); if(b) b.textContent = (playRate===normal) ? "🐢 Slow" : "🐇 Normal";
   if(playing) speakIndex(wIndex, true);
 }
 function resetPlayer(){
@@ -698,35 +698,36 @@ function renderResults({acc,stars,gained,move,prevLevel,topMissed,newBadges,spec
   let banner="";
   if(special==="boss-pass") banner=`<div class="banner up">🏅 You beat the boss, ${LEARNER}! ${lvlLabel(prevLevel)} is certified — welcome to ${lvlLabel(S.level)}.</div>`;
   if(special==="boss-fail") banner=`<div class="banner down">So close! You need 80% to clear the checkpoint. Review a little and try again — you've got this.</div>`;
-  if(move==="up" && special!=="boss-pass") banner=`<div class="banner up">⬆ ¡Subiste de nivel, ${LEARNER}! Moving from ${lvlLabel(prevLevel)} to ${lvlLabel(S.level)}.</div>`;
-  if(move==="down") banner=`<div class="banner down">↺ No pasa nada, ${LEARNER} — easing back to ${lvlLabel(S.level)} to lock in the basics.</div>`;
+  if(move==="up" && special!=="boss-pass") banner=`<div class="banner up">⬆ Level up, ${LEARNER}! Moving from ${lvlLabel(prevLevel)} to ${lvlLabel(S.level)}.</div>`;
+  if(move==="down") banner=`<div class="banner down">↺ ${grInline("Σιγά σιγά")} — step by step, ${LEARNER}. Easing back to ${lvlLabel(S.level)} to lock in the basics. You can jump back up any time from the home screen.</div>`;
 
   let lesson="";
-  if(topMissed && SKILLS[topMissed]) lesson=`<div class="lessoncall"><h4>📘 Quick lesson · ${SKILLS[topMissed].name}</h4><p>${speakify(SKILLS[topMissed].lesson, false)}</p><button class="btn small" style="background:var(--gold)" onclick="openLesson('${topMissed}')">Practicar · Practice this</button></div>`;
+  if(topMissed && SKILLS[topMissed]) lesson=`<div class="lessoncall"><h4>📘 Quick lesson · ${SKILLS[topMissed].name}</h4><p>${speakify(SKILLS[topMissed].lesson, false)}</p><button class="btn small" style="background:var(--gold)" onclick="openLesson('${topMissed}')">Practice this</button></div>`;
 
   let badgeHtml="";
   if(newBadges && newBadges.length) badgeHtml=`<div class="newbadges">${newBadges.map(b=>`<div class="nb">${b.icon}<span>${b.name}</span></div>`).join("")}</div>`;
 
-  const msgs=[`Otra vez, ${LEARNER} — every read makes the next one click.`,`¡Buen comienzo, ${LEARNER}! Check the glossary and run it again.`,`¡Muy bien, ${LEARNER}! You got the gist.`,`¡Perfecto, ${LEARNER}! Flawless round. 🎉`];
-  let headline = special==="srs" ? `¡Repaso listo, ${LEARNER}!`
-              : special==="practice" ? `¡Práctica lista, ${LEARNER}!`
-              : special==="match" ? `¡Parejas listas, ${LEARNER}!`
-              : special==="grammar" ? `¡Lección lista, ${LEARNER}!`
+  const msgs=[`Again, ${LEARNER} — every read makes the next one click.`,`A good start, ${LEARNER}! Check the glossary and run it again.`,`${grInline("Πολύ καλά")}, ${LEARNER}! You got the gist.`,`${grInline("Τέλεια")}, ${LEARNER}! Flawless round. 🎉`];
+  const done = what => `${grInline("Μπράβο")}, ${LEARNER}! ${what} done.`;
+  let headline = special==="srs" ? done("Review")
+              : special==="practice" ? done("Practice")
+              : special==="match" ? done("Word match")
+              : special==="grammar" ? done("Lesson")
               : msgs[stars];
   const freezeBanner = S._streakEvent==="froze" ? `<div class="banner up">🛡️ Streak saved, ${LEARNER}! A banked freeze covered a missed day — you're still on a ${S.streak}-day streak 🔥.</div>` : "";
 
   document.getElementById("results").innerHTML=`<div class="result"><div class="ring">${ring}</div><h1>${pct}%</h1><div class="bigstars">${starString(stars)}</div><p>${headline}</p>${banner}${freezeBanner}${badgeHtml}${lesson}<div class="rewards"><div class="reward"><div class="v" style="color:var(--gold)">+${gained}</div><div class="l">XP</div></div><div class="reward"><div class="v">🔥 ${S.streak}</div><div class="l">streak</div></div></div></div>`;
   show("results");
   const f=document.getElementById("footer"); f.classList.remove("hidden");
-  const b=document.getElementById("footerBtn"); b.textContent="Inicio · Home"; b.onclick=goHome;
+  const b=document.getElementById("footerBtn"); b.textContent="Home"; b.onclick=goHome;
 
-  if(stars===3 || special==="boss-pass" || move==="up"){ confetti(); mascot("celebrate", special==="boss-pass"?"¡Eres un crack! 🏅":"¡Buen trabajo! 🎉", true); }
-  else if(stars>=2){ mascot("happy","¡Bien! 👏", true); }
+  if(stars===3 || special==="boss-pass" || move==="up"){ confetti(); mascot("celebrate", special==="boss-pass"?"Είσαι αστέρι! · you're a star 🏅":"Μπράβο! · bravo 🎉", true); }
+  else if(stars>=2){ mascot("happy","Ωραία! · nice 👏", true); }
   else mascot("idle","");
 }
 
 /* ===== SKILL LESSON + TARGETED PRACTICE =====
-   The weak-spot ("Slabá místa") review used to dead-end: it showed an
+   The weak-spot review used to dead-end (in Czech Quest, where this came from): it showed an
    explanation and then, for any skill with no story questions tagged to it,
    offered nothing to actually DO. Seven of the eighteen skills (translation,
    prepositions, aspect, future, comparatives, reflexives, relative) were in
@@ -784,58 +785,29 @@ function practiceSet(skill, n){
 }
 
 /* ===== TAP-TO-HEAR INSIDE LESSONS =====
-   Story words are tappable; lesson teaching cards weren't, so "por favor" could be
-   read but never heard. Every Spanish term in a lesson (the <b> bits) becomes
-   tappable, using the same dotted underline the stories use.
-   Which <b> is Spanish? The stories ARE Spanish, so their words make a reliable
-   lexicon — plus every gloss and every fill-in answer. A bold whose words are
-   mostly in that lexicon is Spanish; "Mac:", "11–15" and "-tion → -ción" are not. */
-const ES_TOKENS = (function(){
-  const set=new Set(), add=s=>norm(s).split(/[^a-z0-9]+/).forEach(w=>{ if(w) set.add(w); });
-  STORIES.forEach(s=>{ add(plainText(s.text)); (s.quiz||[]).forEach(q=>{ if(q.type==="fill") (q.a||[]).forEach(add); }); });
-  Object.keys(VOCAB_INDEX).forEach(add);
-  (window.LESSONS||[]).forEach(l=>(l.practice||[]).forEach(q=>{ if(q.type==="fill") (q.a||[]).forEach(add); }));
-  return set;
-})();
-/* Words that give away an English label ("Pro tip:", "Vowels never change:").
-   A word that is ALSO Spanish (me, no, a, son, van…) is exempt via ES_TOKENS,
-   which is why the lexicon is still built. */
-const EN_MARKERS = new Set(("the and or is are was were you your yours im going gonna my we our they them this that these those "+
-  "with without for from of to in on at by about into over under again very just only also not dont cant wont "+
-  "what when where which who how why tip pro friend friends day days vowel vowels never change changes false "+
-  "hello good morning night thing things word words say says said speak speaks hear hears people time times "+
-  "use uses using like likes make makes get gets take takes there here its be been being do does did have has had "+
-  "will would should could may might must let lets each any some all most more less than then so if but because "+
-  "while during before after own same other another such few many much every both either neither").split(" "));
-/* Letter names as they appear in the sounds lesson ("<b>ll</b> and <b>y</b> sound like…").
-   norm() strips accents, so ñ arrives as n. */
-const LETTER_DRILL = new Set(["h","j","y","ll","rr","n","c","g","v","b","z","x","qu","gu"]);
-/* Bolds in a lesson are Spanish unless something says otherwise — being too strict
-   left "con permiso", "taco" and "popote" silent, which is the whole point of this. */
-function isSpanishish(text){
-  const raw=(text||"").trim();
-  if(!/[a-záéíóúñü]/i.test(raw)) return false;            // numbers, arrows, symbols only
-  if(/[→➜]/.test(raw)) return false;                      // pattern rows: "-tion → -ción"
-  if(/^[-–]|[-–]$/.test(raw)) return false;               // affixes: "-ce", "dieci-"
-  if(raw.replace(/[^a-záéíóúñü]/gi,"").length<2) return false;
-  const toks=norm(raw).split(/[^a-z0-9]+/).filter(Boolean);
-  if(!toks.length) return false;
-  if(toks.every(w=>w.length===1)) return false;           // letter drills: "a e i o u"
-  // A lone letter NAME from the pronunciation lesson (h, j, ll, rr, ñ) is not a word —
-  // but two-letter WORDS are (vi, yo, va, un, no), and they must stay tappable.
-  if(toks.length===1 && LETTER_DRILL.has(toks[0])) return false;
-  return !toks.some(w=>EN_MARKERS.has(w) && !ES_TOKENS.has(w));
+   Every Greek term in a lesson or an explanation (the <b> bits) becomes tappable,
+   with the same dotted underline the stories use, and gets its pronunciation
+   right after it. Deciding which <b> is Greek is easy here — it has Greek letters.
+   (Spanish Quest needed a whole lexicon + English-marker heuristic for this.)
+   A lone letter or a letter pair ("Ρ", "Ρρ") is a letter, not a word: no audio.
+   Rule for content: never type the pronunciation by hand — this adds it. */
+function isGreekish(text){
+  const letters=(text||"").replace(/[^\u0370-\u03FF\u1F00-\u1FFF]/g,"");
+  if(letters.length<2) return false;
+  if(letters.length===2 && letters[0].toLowerCase()===letters[1].toLowerCase()) return false;  // "Ρρ"
+  return true;
 }
 function speakify(html, withTip){
   const d=document.createElement("div"); d.innerHTML=html;
   d.querySelectorAll("b").forEach(b=>{
-    if(!isSpanishish(b.textContent)) return;
+    if(!isGreekish(b.textContent)) return;
     b.classList.add("say");
     b.setAttribute("role","button"); b.setAttribute("tabindex","0");
-    b.setAttribute("aria-label","Escuchar "+b.textContent.trim());
+    b.setAttribute("aria-label","Listen: "+b.textContent.trim());
+    b.insertAdjacentHTML("afterend", trInline(b.textContent.trim()));
   });
   const tip = (withTip!==false && d.querySelector("b.say"))
-    ? `<div class="saytip">🔊 Toca las palabras subrayadas para escucharlas · Tap any underlined Spanish word to hear it — then say it out loud.</div>`
+    ? `<div class="saytip">🔊 Tap any underlined Greek word to hear it — then say it out loud. The grey letters show how it sounds.</div>`
     : "";
   return tip + d.innerHTML;
 }
@@ -846,8 +818,9 @@ function sayBold(b){
   speakWord(t);
 }
 /* Delegated once per container, so they survive every innerHTML replacement.
-   #results carries the same mini-lesson after a round — it must be tappable there too. */
-["lessonBody","results"].forEach(id=>{
+   #results carries the same mini-lesson after a round, and quiz explanations and the
+   fill-in answer carry Greek too — all of them must be tappable. */
+["lessonBody","results","qExplain","qFeedback"].forEach(id=>{
   const el=document.getElementById(id); if(!el) return;
   el.addEventListener("click", e=>{ sayBold(e.target.closest && e.target.closest("b.say")); });
   el.addEventListener("keydown", e=>{
@@ -858,11 +831,11 @@ function sayBold(b){
 function openLesson(skill){
   practiceSkill=skill;
   document.getElementById("lessonTitle").textContent=SKILLS[skill].name;
-  document.getElementById("lessonSub").textContent="Mini-lección · Mini-lesson";
+  document.getElementById("lessonSub").textContent="Mini-lesson";
   let body = SKILLS[skill].lesson;
   const full = lessonsForSkill(skill);
   if(full.length){
-    body += full.map(l=>`<div class="fulllesson"><h4>📗 Lección completa · ${l.title} <small>${l.titleEn} · ${l.level}</small></h4>${l.body}</div>`).join("");
+    body += full.map(l=>`<div class="fulllesson"><h4>📗 Full lesson · ${l.titleEn} <small>${lvlLabel(l.level)}</small></h4>${l.body}</div>`).join("");
   }
   document.getElementById("lessonBody").innerHTML = speakify(body);
   show("lesson");
@@ -870,10 +843,10 @@ function openLesson(skill){
   const b=document.getElementById("footerBtn");
   const pool=practiceSet(skill, PRACTICE_N);
   if(pool.length){
-    b.textContent=`Practicar (${pool.length} preguntas) · Practice`;
+    b.textContent=`Practice (${pool.length} questions)`;
     b.onclick=()=>startPractice(skill, pool);
   } else {
-    b.textContent="Inicio · Home"; b.onclick=goHome;
+    b.textContent="Home"; b.onclick=goHome;
   }
   document.getElementById("lesson").scrollTop=0;
   mascot("idle","");
@@ -886,7 +859,7 @@ function startPractice(skill, pool){
   // story does. Box 0 would make it due immediately and flood her word review.
   quiz.forEach(q=>{ if(q._vocab) enrollWord(q._vocab, 1); });
   save();
-  current={ titleGr:"Práctica", titleEn:SKILLS[skill].name, quiz };
+  current={ titleGr:"Εξάσκηση", titleEn:SKILLS[skill].name, quiz };
   startQuiz();
 }
 
@@ -898,12 +871,12 @@ function startVocabSession(keys, titleGr, titleEn){
   current={ titleGr, titleEn, quiz };
   startQuiz();
 }
-function startSrs(){ startVocabSession(dueWords(), "Repaso de palabras", "Word review"); }
-function startPhraseReview(){ startVocabSession(duePhrases(), "Repaso de frases", "Phrase review"); }
+function startSrs(){ startVocabSession(dueWords(), "Επανάληψη", "Word review"); }
+function startPhraseReview(){ startVocabSession(duePhrases(), "Επανάληψη", "Phrase review"); }
 
 /* ===== WORD MATCH (tap-to-match vocab recap) =====
-   6 Spanish buttons on the left, 6 English on the right (each column independently
-   shuffled). Tap a Spanish word then its English match. Correct = both lock green and
+   6 Greek buttons on the left, 6 English on the right (each column independently
+   shuffled). Tap a Greek word then its English match. Correct = both lock green and
    the word gets a spaced-repetition credit. Pulls her most-recently-learned words first. */
 let matchBoards=[], matchBoardIdx=0, matchPairs=[], matchLeft=[], matchRight=[],
     selL=null, selR=null, matchLock=false, matchedThisBoard=0,
@@ -928,7 +901,7 @@ function matchAvailable(){ return recentVocab(18).length>=4; }
 function startMatch(){
   if(window.speechSynthesis) speechSynthesis.cancel();
   mode="match";
-  // Two different words can share an English gloss ("el menú" / "la carta" = the menu).
+  // Two different words can share an English gloss ("κάτι άλλο" / "τίποτα άλλο").
   // On one board that renders as two identical buttons — either tap validates, so it
   // doesn't mis-grade, it just looks broken. Keep the first of each meaning.
   const seenEn=new Set();
@@ -961,24 +934,24 @@ function renderMatchBoard(){
   matchLeft=shuffle(matchPairs.map(p=>p.gr));
   matchRight=shuffle(matchPairs.map(p=>p.en));
   document.getElementById("match").innerHTML=`
-    <div class="topnav"><button class="back" onclick="goHome()">‹ Atrás</button></div>
+    <div class="topnav"><button class="back" onclick="goHome()">‹ Back</button></div>
     <div class="qcount" id="mCount"></div>
-    <div class="mtip">Une las parejas · Tap a Spanish word, then its English match.</div>
+    <div class="mtip">Tap a Greek word, then its English match. Tapping a Greek word also says it out loud.</div>
     <div class="cols">
-      <div class="mcol gr">${matchLeft.map((gr,i)=>`<button class="mbtn" id="L${i}" onclick="matchTap('L',${i})">${showGr(gr)}</button>`).join("")}</div>
+      <div class="mcol gr">${matchLeft.map((gr,i)=>`<button class="mbtn" id="L${i}" onclick="matchTap('L',${i})">${grBlock(showGr(gr))}</button>`).join("")}</div>
       <div class="mcol en">${matchRight.map((en,i)=>`<button class="mbtn" id="R${i}" onclick="matchTap('R',${i})">${en}</button>`).join("")}</div>
     </div>`;
   updateMatchCount();
   document.getElementById("match").scrollTop=0;
 }
 function updateMatchCount(){
-  document.getElementById("mCount").textContent=`RONDA ${matchBoardIdx+1}/${matchBoards.length} · ${matchedThisBoard}/${matchPairs.length}`;
+  document.getElementById("mCount").textContent=`ROUND ${matchBoardIdx+1}/${matchBoards.length} · ${matchedThisBoard}/${matchPairs.length}`;
 }
 function matchTap(side,i){
   if(matchLock) return;
   const btn=document.getElementById(side+i);
   if(!btn || btn.classList.contains("matched")) return;
-  if(side==="L"){ if(selL!=null) document.getElementById("L"+selL).classList.remove("sel"); selL=i; }
+  if(side==="L"){ if(selL!=null) document.getElementById("L"+selL).classList.remove("sel"); selL=i; speakWord(matchLeft[i]); }
   else { if(selR!=null) document.getElementById("R"+selR).classList.remove("sel"); selR=i; }
   btn.classList.add("sel");
   if(selL!=null && selR!=null) evalMatch();
@@ -994,12 +967,12 @@ function evalMatch(){
     matchTotal++; if(!wasDirty) matchClean++;
     matchedThisBoard++; selL=null; selR=null;
     save(); updateMatchCount();
-    mascot("happy", pick(["✓","¡Eso!","¡Exacto!","¡Bravo!"]));
+    mascot("happy", pick(["✓","Μπράβο! · bravo","Σωστά! · correct","Ναι! · yes"]));
     if(matchedThisBoard>=matchPairs.length){ matchLock=true; setTimeout(nextMatchBoard,650); }
   } else {
     matchLock=true; matchDirty.add(gr);
     lb.classList.add("bad"); rb.classList.add("bad");
-    mascot("sad","Otra vez");
+    mascot("sad","Ξανά · again");
     const sl=selL, sr=selR;
     setTimeout(()=>{
       const a=document.getElementById("L"+sl), b=document.getElementById("R"+sr);
@@ -1041,8 +1014,8 @@ function startBoss(){
     pool=pool.concat(lang);
   }
   pool=shuffle(pool).slice(0, Math.min(8, pool.length));
-  current={ titleGr:"El jefe", titleEn:`${lvlLabel(lvl)} boss challenge`, quiz:pool };
-  mascot("think","¡A ver qué sabes! 💪", true);
+  current={ titleGr:"Τεστ", titleEn:`${lvlLabel(lvl)} boss challenge`, quiz:pool };
+  mascot("think","Για να δούμε! · let's see 💪", true);
   startQuiz();
 }
 
@@ -1057,7 +1030,7 @@ function openGrammarLesson(id){
   const f=document.getElementById("footer"); f.classList.remove("hidden");
   const b=document.getElementById("footerBtn");
   const n=(l.practice||[]).length;
-  b.textContent = n ? `Practicar (${Math.min(n,6)}) · Practice` : "Inicio · Home";
+  b.textContent = n ? `Practice (${Math.min(n,6)})` : "Home";
   b.onclick = n ? ()=>startGrammarPractice(id) : goHome;
   document.getElementById("lesson").scrollTop=0;
   mascot("idle","");
@@ -1069,82 +1042,120 @@ function startGrammarPractice(id){
   startQuiz();
 }
 
-/* ===== PLACEMENT TEST ===== */
-/* Rough cognate detector: the Spanish core (article stripped, accents dropped)
-   shares its first 4 letters with an English word in the gloss. Catches
-   tour/taxi/hotel/papaya/concierto; a false positive only shrinks the pool. */
-function isFreebie(k){
-  const gr=norm(k.replace(ARTICLE_RE,"")), en=norm((VOCAB_INDEX[k]||{}).en||"");
-  return gr.length>=4 && en.split(" ").some(w=>w.startsWith(gr.slice(0,4)));
-}
-let placeIdx=0, placeScore={}, placeQs=[];
-function buildPlacement(){
-  // Self-contained vocabulary questions of increasing level. Comprehension
-  // questions can't be used here (they'd reference an unread story), so we test
-  // "what does this word mean?" with level-graded vocab — a clean difficulty signal.
-  // Built by vocabQuestion(), so it is WORDS only, distractors are the same kind,
-  // and capitals are display-normalised (the Czech Quest placement still mixes
-  // phrases in and leaks capitals — fixed here from day one).
-  // Cognates are skipped: "un tour" = "a tour" is a free point — great for
-  // confidence in a story, useless for placement (two freebies at Nivel 3 would
-  // put a total beginner there).
-  const order=["L0","L0","L1","L1","L2","L2","L3","L3"];
-  const qs=[], used=new Set();
-  order.forEach(l=>{
-    const chosen=shuffle((VOCAB_BY_LEVEL[l]||[]).filter(w=>!used.has(w) && isWord(w) && !isFreebie(w) && (VOCAB_INDEX[w].en||"").length))[0];
-    if(!chosen) return;
-    const q=vocabQuestion(chosen); if(!q) return;
-    used.add(chosen);
-    q._level=l; delete q._vocab;   // placement never touches the SRS
-    qs.push(q);
-  });
-  return qs;
-}
+/* ===== THE LEVEL CHECK (placement) =====
+   The learner might be brand new or have finished the Duolingo tree, so the first
+   open offers a real assessment, not a vocab spot-check:
+   - one block per level (L0 → L4), PLACE_PER_LEVEL questions each, drawn from the
+     hand-written PLACEMENT bank in content.js (alphabet reading, vocab, grammar,
+     whole-sentence meaning — all self-contained, no story needed);
+   - four options plus "I don't know", so nobody has to guess (guessing is what
+     over-places people);
+   - a block is passed with PLACE_PASS right; the check stops at the first block
+     that isn't, and the learner is placed AT that level — the first one they
+     haven't mastered. Pass everything and it's Level 4.
+   - it ends early inside a block once a pass is out of reach, so a beginner is
+     done in a handful of questions.
+   The result is a suggestion: the result screen offers "start from the beginning",
+   and every level stays one tap away on the home screen. */
+const PLACE_PER_LEVEL = 3, PLACE_PASS = 2;
+let placeLevelIdx=0, placeQs=[], placeIdx=0, placeHits=0, placeBlocks={}, placeLock=false;
 function openPlacement(){
-  placeQs=buildPlacement(); placeIdx=0; placeScore={};
+  placeLevelIdx=0; placeBlocks={};
   show("placement"); document.getElementById("footer").classList.add("hidden");
+  startPlaceBlock();
+}
+function startPlaceBlock(){
+  const l=LEVELS[placeLevelIdx];
+  placeQs=shuffle((window.PLACEMENT||{})[l]||[]).slice(0, PLACE_PER_LEVEL).map(q=>{
+    const right=q.opts[q.a], opts=shuffle(q.opts);
+    return Object.assign({}, q, { opts, a:opts.indexOf(right), _level:l });
+  });
+  placeIdx=0; placeHits=0;
+  if(!placeQs.length){ blockDone(); return; }
   renderPlacement();
 }
 function renderPlacement(){
+  placeLock=false;
   const wrap=document.getElementById("placement");
-  if(placeIdx>=placeQs.length){ finishPlacement(); return; }
-  const q=placeQs[placeIdx], total=placeQs.length;
+  const q=placeQs[placeIdx];
+  let bars=""; for(let i=0;i<LEVELS.length;i++) bars+=`<div class="qbar ${i<=placeLevelIdx?'on':''}"></div>`;
+  const first = placeLevelIdx===0 && placeIdx===0;
   wrap.innerHTML=`
-    <div class="placeintro ${placeIdx===0?'':'hidden'}"></div>
-    <div class="qcount">PRUEBA RÁPIDA · ${placeIdx+1} / ${total}</div>
-    <div class="qtext">${q.q}</div>
-    <div id="pOpts">${q.opts.map((o,i)=>`<button class="opt" onclick="placeAnswer(${i})">${o}</button>`).join("")}</div>
-    <div class="qfeedback" id="pFb"></div>`;
-  wrap.scrollTop=0;
+    <div class="topnav"><button class="back" onclick="placementBack()">‹ Back</button></div>
+    <div class="qprogress">${bars}</div>
+    <div class="qcount">LEVEL CHECK · PART ${placeLevelIdx+1} OF ${LEVELS.length} · ${placeIdx+1}/${placeQs.length}</div>
+    ${first?`<div class="placehint">No pressure: if you don't know, tap <b>“I don't know”</b> instead of guessing — it gives a truer result. The check gets harder as it goes and stops as soon as it finds your level.</div>`:""}
+    <div class="qtext">${grInline(q.q, q.notr)}</div>
+    <div id="pOpts">${q.opts.map((o,i)=>`<button class="opt" onclick="placeAnswer(${i})">${grBlock(o, q.notr)}</button>`).join("")}
+      <button class="opt idk" onclick="placeAnswer(-1)">🤷 I don't know</button></div>`;
+  window.scrollTo(0,0);
 }
 function placeAnswer(i){
+  if(placeLock) return; placeLock=true;
   const q=placeQs[placeIdx]; const ok=i===q.a;
-  placeScore[q._level]=(placeScore[q._level]||0); if(ok) placeScore[q._level]++;
+  if(ok) placeHits++;
   document.querySelectorAll("#pOpts .opt").forEach((b,bi)=>{ b.disabled=true; if(bi===q.a) b.classList.add("correct"); if(bi===i&&i!==q.a) b.classList.add("wrong"); });
-  setTimeout(()=>{ placeIdx++; renderPlacement(); }, 650);
+  setTimeout(()=>{
+    placeIdx++;
+    const misses=placeIdx-placeHits;
+    // done with this block once it's decided either way
+    if(placeIdx>=placeQs.length || placeHits>=PLACE_PASS || misses>placeQs.length-PLACE_PASS) blockDone();
+    else renderPlacement();
+  }, i<0 ? 450 : 750);
 }
+function blockDone(){
+  const l=LEVELS[placeLevelIdx];
+  const passed = placeQs.length ? placeHits>=Math.min(PLACE_PASS, placeQs.length) : true;
+  placeBlocks[l]=passed;
+  if(passed && placeLevelIdx<LEVELS.length-1){ placeLevelIdx++; startPlaceBlock(); }
+  else finishPlacement();
+}
+const PLACE_WHY = {
+  L0:"Let's start with the alphabet. Two short lessons and you'll be reading Greek signs — then your first real phrases.",
+  L1:"You can read Greek and know the first words. Level 1 is survival Greek: ordering, prices, taxis, the hotel, the pharmacy.",
+  L2:"You've got the basics down. Level 2 is getting around: ferries, beaches, markets, directions and verb endings.",
+  L3:"Solid! Level 3 is real conversation: talking about yesterday and tomorrow, festivals, sorting out problems.",
+  L4:"Impressive — you're past most of the Duolingo tree. Level 4 picks up where it stops: να-forms, opinions, “used to”, and how Greeks really talk."
+};
 function finishPlacement(){
-  // Walk levels upward; she "clears" a level only by getting ALL its questions
-  // right. Stop at the first level she doesn't fully clear, and place her there.
-  // This avoids over-placing a lucky guesser (one fluked C1 answer no longer
-  // vaults her to C1). The adaptive engine bumps her up quickly if under-placed.
-  const total={}; placeQs.forEach(q=>{ total[q._level]=(total[q._level]||0)+1; });
-  let best=LEVELS[0];
-  for(const l of LEVELS){
-    if(!total[l]) continue;
-    if((placeScore[l]||0) >= total[l]) best=l;  // cleared every question at this level
-    else break;                                  // first stumble → stop here
-  }
-  S.level=best; S.placed=true; save();
-  mascot("celebrate",`¡Empezamos en ${lvlLabel(best)}! 🎯`, true);
-  confetti();
-  goHome();
+  const failed=LEVELS.find(l=>placeBlocks[l]===false);
+  const best=failed || LEVELS[LEVELS.length-1];
+  S.placeResult={ level:best, blocks:placeBlocks, at:Date.now() }; save();
+  const rows=LEVELS.map(l=>{
+    // The level they land on is where they start, not a failure: ▶, never a red ✗.
+    const r=placeBlocks[l], here=l===best, mark = here ? "▶" : r===true ? "✓" : "·";
+    return `<div class="prow ${here?'here':r===true?'ok':'skip'}"><span class="pm">${mark}</span><span class="pl">${lvlLabel(l)}</span><span class="pn">${LEVEL_NAMES[l]}</span>${here?'<span class="you">start here</span>':''}</div>`;
+  }).join("");
+  const feta=`<svg class="lolo-big" data-mood="celebrate" viewBox="0 0 100 100" aria-hidden="true">${document.getElementById("mascot").innerHTML}</svg>`;
+  const hide = levelIdx(best)>=3;
+  document.getElementById("placement").innerHTML=`
+    <div class="welcomebig">
+      <div class="mole-hi">${feta}</div>
+      <h1>Your level: ${lvlLabel(best)}</h1>
+      <div class="lvlname">${LEVEL_NAMES[best]}</div>
+      <div class="placeres">${rows}</div>
+      <p>${PLACE_WHY[best]}${hide?" Since you read Greek already, the Latin-letter pronunciation will start switched off — the <b>Aa</b> button at the top brings it back any time.":""}</p>
+      <button class="btn" onclick="acceptPlacement('${best}')">Start at ${lvlLabel(best)}</button>
+      ${best!=="L0"?`<button class="btn ghost" style="margin-top:10px" onclick="acceptPlacement('L0')">Start from the very beginning instead</button>`:""}
+      <p class="rem-note" style="margin-top:14px">Nothing is locked. Every level is one tap away on the home screen (“Jump to”), and you can retake this check in ⚙ Settings.</p>
+    </div>`;
+  confetti(); mascot("celebrate","Μπράβο! · bravo 🎯", true);
+  window.scrollTo(0,0);
 }
+function acceptPlacement(l){
+  S.level=l; S.placed=true; S.recent[l]=[];
+  S.showTr = levelIdx(l)<3;          // readers of Greek start without the crutch; Aa brings it back
+  save(); goHome();
+  mascot("celebrate", `Πάμε! · let's go, ${S.name||"friend"}! 🎉`, true);
+}
+/* Back out of the check: to the welcome screen on first open, home otherwise. */
+function placementBack(){ if(S.placed) goHome(); else openPlacementWelcome(); }
 function skipPlacement(){ S.placed=true; save(); closeSettings(); goHome(); }
 
 /* ===== SETTINGS ===== */
 function openSettings(){
   document.getElementById("lvlPicker").innerHTML=LEVELS.map(l=>`<div class="lvlbtn ${l===S.level?'sel':''}" data-l="${l}" onclick="pickLevel('${l}')">${lvlLabel(l)}</div>`).join("");
+  renderTrBox();
   renderVoiceBox();
   renderNameBox();
   renderBackupBox();
@@ -1153,7 +1164,7 @@ function openSettings(){
 function closeSettings(){ document.getElementById("scrim").classList.remove("show"); }
 function pickLevel(l){ S.level=l; save(); document.querySelectorAll(".lvlbtn").forEach(b=>b.classList.toggle("sel",b.dataset.l===l)); renderHome(); }
 function startPlacementFromSettings(){ closeSettings(); openPlacement(); }
-function resetAll(){ if(!confirm("Reset ALL your Spanish Quest progress? This can't be undone.")) return; S=clone(DEFAULTS); save(); closeSettings(); location.reload(); }
+function resetAll(){ if(!confirm("Reset ALL your Greek Quest progress? This can't be undone.")) return; S=clone(DEFAULTS); save(); closeSettings(); location.reload(); }
 
 /* ===== NAME (asked on the welcome screen, editable in Settings) =====
    The name lands in innerHTML templates, so it is always escaped. */
@@ -1163,16 +1174,16 @@ function setName(v){
   S.name=v; LEARNER = v ? escapeHtml(v) : "friend"; save();
 }
 /* ===== VOICE PICKER (Settings) =====
-   Which Spanish voice reads the stories, and how fast. Everything is the device's
+   Which Greek voice reads the stories, and how fast. Everything is the device's
    own offline voice — no audio to host (ADR-006). */
-const VOICE_SAMPLE = "¡Hola! ¿Me da tres tacos, por favor?";
+const VOICE_SAMPLE = "Γεια σου! Θα ήθελα έναν καφέ, παρακαλώ.";
 function renderVoiceBox(){
   const box=document.getElementById("voiceBox"); if(!box) return;
   const all=grVoices(), cur=grVoice();
-  if(!("speechSynthesis" in window)){ box.innerHTML=`<div class="rem-h">🔊 Voz · Voice</div><p class="rem-note">This browser can't do read-aloud.</p>`; return; }
-  const tip = `<p class="rem-note">Want it to sound properly human? Download an HD voice — <b>iPhone:</b> Settings ▸ Accessibility ▸ Spoken Content ▸ Voices ▸ Spanish (Mexico) → pick <b>Paulina</b> or <b>Juan</b> and tap the download arrow (Enhanced/Premium). <b>Mac:</b> System Settings ▸ Accessibility ▸ Spoken Content ▸ System Voice ▸ Manage Voices. It shows up here right after.</p>`;
+  if(!("speechSynthesis" in window)){ box.innerHTML=`<div class="rem-h">🔊 Voice</div><p class="rem-note">This browser can't do read-aloud.</p>`; return; }
+  const tip = `<p class="rem-note">Want it to sound properly human? Download a better Greek voice — <b>iPhone:</b> Settings ▸ Accessibility ▸ Spoken Content ▸ Voices ▸ Greek → pick <b>Melina</b> and tap the download arrow if it offers an Enhanced version. <b>Android:</b> Settings ▸ Text-to-speech ▸ install Greek. <b>Mac:</b> System Settings ▸ Accessibility ▸ Spoken Content ▸ System Voice ▸ Manage Voices. It shows up here right after.</p>`;
   if(!all.length){
-    box.innerHTML=`<div class="rem-h">🔊 Voz · Voice</div><p class="rem-note">No Spanish voice on this device yet.</p>${tip}`;
+    box.innerHTML=`<div class="rem-h">🔊 Voice</div><p class="rem-note">No Greek voice on this device yet — the app will still try the system voice.</p>${tip}`;
     return;
   }
   const opts=all.map(v=>{
@@ -1182,13 +1193,13 @@ function renderVoiceBox(){
   }).join("");
   const rate=S.rate||1;
   box.innerHTML=`
-    <div class="rem-h">🔊 Voz · Voice</div>
+    <div class="rem-h">🔊 Voice</div>
     <p class="rem-note">Who reads the stories out loud. ♀ / ♂ and <b>HD</b> = a downloaded high-quality voice.</p>
     <div class="vrow"><select id="voiceSel" class="vsel" onchange="setVoice(this.value)">${opts}</select>
-    <button class="btn small" style="background:var(--lvl)" onclick="testVoice()">▶ Probar</button></div>
-    <div class="vrow" style="margin-top:8px"><span class="vlabel">Velocidad · Speed</span>
+    <button class="btn small" style="background:var(--lvl)" onclick="testVoice()">▶ Test</button></div>
+    <div class="vrow" style="margin-top:8px"><span class="vlabel">Speed</span>
     <select id="rateSel" class="vsel" onchange="setRate(this.value)">
-      ${[["0.8","🐢 Lenta · slow"],["0.9","Tranquila · relaxed"],["1","Normal"],["1.15","🐇 Rápida · fast"]]
+      ${[["0.8","🐢 Slow"],["0.9","Relaxed"],["1","Normal"],["1.15","🐇 Fast"]]
         .map(([v,l])=>`<option value="${v}" ${Math.abs(rate-parseFloat(v))<0.001?"selected":""}>${l}</option>`).join("")}
     </select></div>
     ${tip}`;
@@ -1196,7 +1207,7 @@ function renderVoiceBox(){
 function setVoice(uri){ S.voiceURI=uri; save(); testVoice(); }
 function setRate(r){
   S.rate=parseFloat(r)||1; playRate=S.rate; save();
-  const b=document.getElementById("slowBtn"); if(b) b.textContent="🐢 Lento";   // keep the reading-view toggle in step
+  const b=document.getElementById("slowBtn"); if(b) b.textContent="🐢 Slow";   // keep the reading-view toggle in step
   testVoice();
 }
 function testVoice(){
@@ -1206,12 +1217,19 @@ function testVoice(){
   speechSynthesis.speak(u);
 }
 
+function renderTrBox(){
+  const box=document.getElementById("trBox"); if(!box) return;
+  box.innerHTML=`
+    <div class="rem-h">🔤 Pronunciation hints</div>
+    <p class="rem-note">Shows how every Greek word sounds, in Latin letters — ${grInline("καλημέρα")}. Great while you learn the alphabet; switch it off to read Greek on its own. Same as the <b>Aa</b> button at the top.</p>
+    <button class="btn small" style="background:var(--lvl)" onclick="toggleTr(); renderTrBox()">${S.showTr?"On — tap to switch off":"Off — tap to switch on"}</button>`;
+}
 function renderNameBox(){
   const box=document.getElementById("nameBox"); if(!box) return;
   box.innerHTML=`
-    <div class="rem-h">👋 Tu nombre · Your name</div>
+    <div class="rem-h">👋 Your name</div>
     <div class="namerow"><input id="nameInput" class="fill slim" maxlength="24" value="${escapeHtml(S.name||"")}" placeholder="Your name" autocomplete="given-name">
-    <button class="btn small" style="background:var(--lvl)" onclick="setName(document.getElementById('nameInput').value); renderHome(); document.getElementById('nameSaved').textContent=' ✓ guardado'">Guardar · Save</button></div>
+    <button class="btn small" style="background:var(--lvl)" onclick="setName(document.getElementById('nameInput').value); renderHome(); document.getElementById('nameSaved').textContent=' ✓ saved'">Save</button></div>
     <span id="nameSaved" class="rem-copied"></span>`;
 }
 document.getElementById("scrim").addEventListener("click",e=>{ if(e.target.id==="scrim") closeSettings(); });
@@ -1225,14 +1243,14 @@ function b64decodeUTF8(b64){ return decodeURIComponent(escape(atob(b64))); }
 function renderBackupBox(){
   const box=document.getElementById("backupBox"); if(!box) return;
   box.innerHTML=`
-    <div class="rem-h">💾 Tu progreso · Save &amp; restore progress</div>
+    <div class="rem-h">💾 Save &amp; restore progress</div>
     <p class="rem-note">Your progress saves automatically on this device. Use this to back it up, or move it to another phone or computer.</p>
-    <button class="btn ghost small" onclick="exportProgress()">⬆︎ Respaldar · Back up (get code)</button>
+    <button class="btn ghost small" onclick="exportProgress()">⬆︎ Back up (get code)</button>
     <div id="backupCodeWrap" style="margin-top:8px"></div>
     <details class="rem-restore">
-      <summary>⬇︎ Restaurar · Restore from a code</summary>
+      <summary>⬇︎ Restore from a code</summary>
       <textarea class="rem-code" id="restoreInput" placeholder="Paste a backup code here…"></textarea>
-      <button class="btn small" style="background:var(--lvl)" onclick="importProgress()">Restaurar · Restore</button>
+      <button class="btn small" style="background:var(--lvl)" onclick="importProgress()">Restore</button>
       <span id="restoreMsg" class="rem-copied"></span>
     </details>`;
 }
@@ -1240,13 +1258,13 @@ function exportProgress(){
   const code=b64encodeUTF8(JSON.stringify(S));
   document.getElementById("backupCodeWrap").innerHTML=`
     <textarea class="rem-code" id="backupCode" readonly>${code}</textarea>
-    <button class="btn small" style="background:var(--lvl)" onclick="copyBackupCode()">📋 Copiar · Copy</button>
+    <button class="btn small" style="background:var(--lvl)" onclick="copyBackupCode()">📋 Copy</button>
     <span id="backupCopied" class="rem-copied"></span>
     <p class="rem-note" style="margin-top:8px">Keep this safe — email it to yourself or save it in Notes. Paste it under “Restore” on any device to bring this progress back.</p>`;
 }
 function copyBackupCode(){
   const t=document.getElementById("backupCode"); t.select();
-  const done=()=>{ document.getElementById("backupCopied").textContent=" ✓ copiado"; };
+  const done=()=>{ document.getElementById("backupCopied").textContent=" ✓ copied"; };
   if(navigator.clipboard) navigator.clipboard.writeText(t.value).then(done, ()=>{ try{document.execCommand("copy");}catch(_){}; done(); });
   else { try{document.execCommand("copy");}catch(_){}; done(); }
 }
@@ -1257,11 +1275,11 @@ function importProgress(){
   try{
     const obj=JSON.parse(b64decodeUTF8(v));
     if(!obj || typeof obj!=="object" || !("xp" in obj) || !("level" in obj)) throw new Error("invalid");
-    /* A Czech Quest backup code decodes perfectly here — same engine, same origin, same
-       looking box, and the codes are opaque base64 so nothing tells them apart. Its CEFR
-       level has no XP table in this app, so the next round does xp += NaN and sticks:
-       "★ NaN XP", an empty story list, no boss, no way back but the level picker. */
-    if(LEVELS.indexOf(obj.level)<0) throw new Error("foreign");
+    /* A Czech or Spanish Quest backup code decodes perfectly here — same engine, same
+       origin, same-looking box, opaque base64. Spanish Quest even uses the same level
+       codes (L0–L3), so the level check alone can't catch it: Greek Quest saves carry
+       app:"greek-quest", and anything without it is another app's progress. */
+    if(obj.app!=="greek-quest" || LEVELS.indexOf(obj.level)<0) throw new Error("foreign");
     if(typeof obj.xp!=="number" || !isFinite(obj.xp)) throw new Error("invalid");
     S=Object.assign(clone(DEFAULTS), obj); save();
     msg.style.color="var(--green)"; msg.textContent=" ✓ restored — reloading…";
@@ -1269,7 +1287,7 @@ function importProgress(){
   }catch(e){
     msg.style.color="var(--red)";
     msg.textContent = e.message==="foreign"
-      ? " that code is from another app (Czech Quest?) — not this one"
+      ? " that code is from another app (Czech or Spanish Quest?) — not this one"
       : " that code didn't work — copy the whole thing";
   }
 }
@@ -1279,7 +1297,7 @@ load();
 LEARNER = S.name ? escapeHtml(S.name) : "friend";
 playRate = S.rate || 1;
 if(!S.placed){
-  // first-ever open: offer placement
+  // first-ever open: welcome → the level check (or start from zero)
   document.getElementById("welcome").innerHTML="";
   openPlacementWelcome();
 } else {
@@ -1290,18 +1308,19 @@ function openPlacementWelcome(){
   show("placement");
   document.getElementById("footer").classList.add("hidden");
   // A big, happy copy of the mascot — the mood CSS works on any [data-mood] ancestor.
-  const lolo=`<svg class="lolo-big" data-mood="happy" viewBox="0 0 100 100" aria-hidden="true">${document.getElementById("mascot").innerHTML}</svg>`;
+  const feta=`<svg class="lolo-big" data-mood="happy" viewBox="0 0 100 100" aria-hidden="true">${document.getElementById("mascot").innerHTML}</svg>`;
   document.getElementById("placement").innerHTML=`
     <div class="welcomebig">
-      <div class="mole-hi">${lolo}</div>
-      <h1>¡Hola! Soy Lolo.</h1>
-      <p>I'm an axolotl — un <b>ajolote</b> — and I only live in Mexico. Let's get your Spanish trip-ready: tiny stories, real phrases, zero conjugation tables.</p>
-      <label class="namelabel" for="welcomeName">¿Cómo te llamas? · What's your name?</label>
-      <input id="welcomeName" class="fill" maxlength="24" placeholder="Your name" autocomplete="given-name">
-      <button class="btn" style="margin-top:16px" onclick="startFromZero()">Empezar desde cero · Start from zero</button>
-      <button class="btn ghost" style="margin-top:10px" onclick="welcomeTest()">I know a little — quick 8-question test</button>
+      <div class="mole-hi">${feta}</div>
+      <h1>${grInline("Γεια σου!")} I'm Feta.</h1>
+      <p>I'm an island cat from Naxos. Let's pick up your Greek where Duolingo leaves off — or from the very first letter if you're new. Tiny stories, real phrases, a voice to copy.</p>
+      <label class="namelabel" for="welcomeName">What's your name?</label>
+      <input id="welcomeName" class="fill" maxlength="24" placeholder="Your name" autocomplete="given-name" value="${escapeHtml(S.name||"")}">
+      <button class="btn" style="margin-top:16px" onclick="welcomeTest()">Find my level (2–4 min)</button>
+      <p class="rem-note" style="margin-top:8px">A short check that starts easy and stops as soon as it finds your level. You can always change it later.</p>
+      <button class="btn ghost" style="margin-top:12px" onclick="startFromZero()">I'm brand new — start from the alphabet</button>
     </div>`;
 }
 function takeWelcomeName(){ const el=document.getElementById("welcomeName"); if(el && el.value.trim()) setName(el.value); }
-function startFromZero(){ takeWelcomeName(); S.level=LEVELS[0]; S.placed=true; save(); goHome(); mascot("celebrate",`¡Vámonos, ${S.name||"amigo"}! 🎉`, true); }
+function startFromZero(){ takeWelcomeName(); S.level=LEVELS[0]; S.placed=true; S.showTr=true; save(); goHome(); mascot("celebrate",`Πάμε! · let's go, ${S.name||"friend"}! 🎉`, true); }
 function welcomeTest(){ takeWelcomeName(); openPlacement(); }

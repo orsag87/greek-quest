@@ -1,7 +1,7 @@
 {
-  "name": "Spanish Quest",
-  "short_name": "Español",
-  "description": "A cozy, adaptive Mexican-Spanish sprint for absolute beginners heading to Mexico.",
+  "name": "Greek Quest",
+  "short_name": "Ελληνικά",
+  "description": "Pick up Greek where Duolingo leaves off — from the alphabet to real conversation, with a level check to start you in the right place.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

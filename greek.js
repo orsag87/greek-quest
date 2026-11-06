@@ -42,6 +42,7 @@
   function trWord(w){
     // w: lowercase Greek letters only
     if(OVERRIDE[w]) return OVERRIDE[w];
+    if(/^(.)\1+$/.test(w)) return (BASE[w[0]] || w[0]).repeat(w.length);   // "Μμμ…" is a sound, not a word
     let out = "", i = 0;
     const n = w.length;
     while(i < n){
