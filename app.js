@@ -1,20 +1,23 @@
 /* ============================================================================
-   SPANISH QUEST — ENGINE (app.js)
-   Cloned from Czech Quest (~/Dropbox/Czech_Quest) — separate repo, separate
-   storage. Keep the two apps related but never shared.
-   All learning logic lives here. Content lives in content.js.
+   GREEK QUEST — ENGINE (app.js)
+   Cloned from Spanish Quest (~/Dropbox/Spanish_Quest), itself cloned from Czech
+   Quest — separate repo, separate storage. Related apps, never shared.
+   All learning logic lives here. Content lives in content.js; Greek text helpers
+   (translit / answerKey / hasGreek) live in greek.js.
    ========================================================================== */
 
-/* A 2-month sprint for absolute beginners, not a CEFR ladder: four levels,
-   starting at zero. Codes are internal; LEVEL_LABEL is what the learner sees. */
-const LEVELS = ["L0","L1","L2","L3"];
-const LEVEL_LABEL = { L0:"Nivel 0", L1:"Nivel 1", L2:"Nivel 2", L3:"Nivel 3" };
-const LEVEL_NAMES = { L0:"cero · zero", L1:"sobrevivir · survival", L2:"de viaje · on the road", L3:"platicar · chatting" };
-/* Mexican palette: turquesa, cempasúchil, rosa mexicano, azul cobalto */
+/* Picks up where Duolingo leaves off — but the learner might be anywhere from
+   "never seen the alphabet" to "finished the Duolingo tree", so five levels run
+   from the alphabet to past Duolingo, and a placement test on first open finds
+   the right one. Codes are internal; LEVEL_LABEL is what the learner sees. */
+const LEVELS = ["L0","L1","L2","L3","L4"];
+const LEVEL_LABEL = { L0:"Level 0", L1:"Level 1", L2:"Level 2", L3:"Level 3", L4:"Level 4" };
+const LEVEL_NAMES = { L0:"alphabet & first words", L1:"first steps", L2:"on the road", L3:"chatting", L4:"beyond Duolingo" };
+/* Aegean palette: sea blue, olive, terracotta, bougainvillea, deep night sea */
 const LEVEL_COLOR = {
-  L0:["#1B998B","#DDF2EF"], L1:["#D9730D","#FCEBD7"], L2:["#D6336C","#FBE3EC"], L3:["#2D4BA0","#E3E8F6"]
+  L0:["#1F6FB2","#E1EDF8"], L1:["#5E7D2A","#EAF0DC"], L2:["#C25A2E","#F9E6DC"], L3:["#A23B84","#F5E1EF"], L4:["#16486E","#DCE6EF"]
 };
-const XP_PER_CORRECT = { L0:10, L1:15, L2:20, L3:25 };
+const XP_PER_CORRECT = { L0:10, L1:15, L2:20, L3:25, L4:30 };
 function lvlLabel(l){ return LEVEL_LABEL[l] || l; }
 /* The learner's name comes from the welcome screen (S.name); this is the fallback. */
 let LEARNER = "friend";
@@ -23,10 +26,13 @@ const LEITNER_DAYS = [0, 1, 3, 7, 16, 35]; // interval by box (days)
 
 /* ===== STATE ===== */
 const DEFAULTS = {
+  app:"greek-quest",       // tells a Greek Quest backup code apart from a Czech/Spanish one
   level:"L0", name:"", xp:0, streak:0, lastDate:null,
   voiceURI:null, rate:1,   // chosen read-aloud voice + speaking speed
+  showTr:true,             // show the Latin-letter pronunciation under Greek
+  placeResult:null,        // last placement: {level, blocks:{L0:true,...}}
   stars:{}, recent:{}, miss:{}, seen:{},
-  vocab:{},            // es -> {en, box, due, reps, correct, wrong}
+  vocab:{},            // gr -> {en, box, due, reps, correct, wrong}
   bossPassed:{},       // level -> true
   badges:{},           // badgeId -> earned timestamp
   placed:false,        // has the learner done (or skipped) the welcome / placement
@@ -36,10 +42,10 @@ const DEFAULTS = {
 };
 let S = clone(DEFAULTS);
 function clone(o){ return JSON.parse(JSON.stringify(o)); }
-/* Own storage key. Spanish Quest and Czech Quest are both served from
+/* Own storage key. Greek, Spanish and Czech Quest are all served from
    orsag87.github.io, and localStorage is per-origin — a shared key would mix
-   the two apps' progress. Never read Czech Quest's keys (czQuest / czQuestV2). */
-const STORE_KEY = "esQuestV1";
+   the apps' progress. Never read esQuestV1 / czQuest / czQuestV2. */
+const STORE_KEY = "grQuestV1";
 function load(){
   try{
     const r = localStorage.getItem(STORE_KEY);
@@ -55,9 +61,9 @@ const BADGES = {
   streak7:    { icon:"⚡", name:"Unstoppable",    desc:"7-day streak" },
   perfect:    { icon:"💯", name:"Flawless",       desc:"A perfect 100% round" },
   words25:    { icon:"📚", name:"Word collector", desc:"25 words learned" },
-  words100:   { icon:"🦉", name:"Vocabulary owl", desc:"100 words mastered" },
+  words100:   { icon:"🦉", name:"Athena's owl",   desc:"100 words mastered" },
   boss:       { icon:"🏅", name:"Checkpoint!",    desc:"Passed a Boss checkpoint" },
-  top:        { icon:"🌮", name:"Ya platicas",    desc:"Reached Nivel 3 — you can chat" }
+  top:        { icon:"🫒", name:"Beyond Duolingo", desc:"Reached Level 4" }
 };
 function award(id){
   if(S.badges[id]) return null;
@@ -67,47 +73,47 @@ function award(id){
 
 /* ===== GLOSS / VOCAB INDEX (built once from all stories) ===== */
 const GLOSS_RE = /\[([^|\]]+)\|([^\]]+)\]/g;
-const VOCAB_INDEX = {};        // es -> {en, level, kind}
-const VOCAB_BY_LEVEL = {};     // level -> [es, ...]
+const VOCAB_INDEX = {};        // gr -> {en, level, kind}
+const VOCAB_BY_LEVEL = {};     // level -> [gr, ...]
 
-/* A gloss is a WORD if the Spanish side is a single token, otherwise a PHRASE
-   ("me gusta", "la cuenta, por favor"). Word review and word match are strictly
-   words; phrases get their own review lane.
-   Spanish nouns are glossed WITH their article ("el baño", "la cuenta") so the
+/* A gloss is a WORD if the Greek side is a single token, otherwise a PHRASE
+   ("μου αρέσει", "τον λογαριασμό, παρακαλώ"). Word review and word match are
+   strictly words; phrases get their own review lane.
+   Greek nouns are glossed WITH their article ("η τουαλέτα", "το νερό") so the
    gender comes for free — an article + one word still counts as a single WORD. */
-const ARTICLE_RE = /^(el|la|los|las|un|una|unos|unas)\s+/i;
-function isPhrase(es){ return /\s/.test((es||"").trim().replace(ARTICLE_RE,"")); }
-function isWord(es){ return !isPhrase(es); }
+const ARTICLE_RE = /^(ο|η|το|οι|τα|τον|την|τη|του|της|τους|τις|ένας|έναν|μία|μια|ένα)\s+/i;
+function isPhrase(gr){ return /\s/.test((gr||"").trim().replace(ARTICLE_RE,"")); }
+function isWord(gr){ return !isPhrase(gr); }
 
 /* Sentence-initial capitals are an artifact of where the word appeared in the
    story, not real orthography — and in match/review they leak the answer
    (capital lines up with capital). Strip them for DISPLAY only, on both sides,
    keeping genuine proper nouns and the English pronoun "I". */
-const PROPER = new Set(["México","CDMX","Ciudad de México","Oaxaca","Cancún","Tulum",
-  "Playa del Carmen","Guadalajara","Mérida","Xochimilco","OXXO","ADO","Día de Muertos",
-  "Diego","Sofía","Lupe","Doña Lupe","Beto","Don Beto","Lolo"]);
+const PROPER = new Set(["Ελλάδα","Αθήνα","Ακρόπολη","Πλάκα","Μοναστηράκι","Πειραιάς","Νάξος",
+  "Σαντορίνη","Πάρος","Κρήτη","Χώρα","Πορτάρα","Απείρανθος","Αγία Άννα","ΚΤΕΛ","Πάσχα",
+  "Χριστός Ανέστη","Αληθώς Ανέστη","Μαρία","Νίκος","Γιώργος","Ελένη","Φέτα","Sam"]);
 function deCap(s){ return s ? s.charAt(0).toLowerCase()+s.slice(1) : s; }
-function showEs(es){ return PROPER.has(es) ? es : deCap(es); }
-function showEn(es, en){
-  if(PROPER.has(es)) return en;
+function showGr(gr){ return PROPER.has(gr) ? gr : deCap(gr); }
+function showEn(gr, en){
+  if(PROPER.has(gr)) return en;
   const first = (en||"").split(/\s+/)[0] || "";
   if(first === "I" || first === "I'm" || first === "I'd" || first === "I've") return en;
   if(first.length>1 && first.slice(1) !== first.slice(1).toLowerCase()) return en;  // acronym / inner caps
   return deCap(en);
 }
 
-/* One flashcard per item, whatever its position in the sentence. "Gracias"
-   (sentence start) and "gracias" (mid-sentence) are the same word; keying the
+/* One flashcard per item, whatever its position in the sentence. "Ευχαριστώ"
+   (sentence start) and "ευχαριστώ" (mid-sentence) are the same word; keying the
    index by the raw text made them two cards that could land on the SAME match
    board. Every lookup goes through vkey(). Proper nouns keep their capital. */
-function vkey(es){ es=(es||"").trim(); return PROPER.has(es) ? es : deCap(es); }
+function vkey(gr){ gr=(gr||"").trim(); return PROPER.has(gr) ? gr : deCap(gr); }
 
 (function buildVocabIndex(){
   STORIES.forEach(s=>{
     let m; GLOSS_RE.lastIndex = 0;
     while((m = GLOSS_RE.exec(s.text))){
-      const es = vkey(m[1]), en = m[2].trim();
-      if(!VOCAB_INDEX[es]){ VOCAB_INDEX[es] = { en, level:s.level, kind: isPhrase(es)?"phrase":"word" }; (VOCAB_BY_LEVEL[s.level] ||= []).push(es); }
+      const gr = vkey(m[1]), en = m[2].trim();
+      if(!VOCAB_INDEX[gr]){ VOCAB_INDEX[gr] = { en, level:s.level, kind: isPhrase(gr)?"phrase":"word" }; (VOCAB_BY_LEVEL[s.level] ||= []).push(gr); }
     }
   });
 })();
@@ -121,14 +127,35 @@ function applyLevelColor(){
 function plainText(t){ return t.replace(GLOSS_RE, "$1"); }
 function buildGlossary(t){
   const out=[], seen=new Set(); let m; GLOSS_RE.lastIndex=0;
-  while((m=GLOSS_RE.exec(t))){ const es=m[1].trim(); if(!seen.has(es.toLowerCase())){ seen.add(es.toLowerCase()); out.push([es, m[2].trim()]); } }
+  while((m=GLOSS_RE.exec(t))){ const gr=m[1].trim(); if(!seen.has(gr.toLowerCase())){ seen.add(gr.toLowerCase()); out.push([gr, m[2].trim()]); } }
   return out;
 }
 function starString(n){ let s=""; for(let i=0;i<3;i++) s += i<n ? "★" : '<span class="off">★</span>'; return s; }
-/* Accent-insensitive: strips diacritics so "manana" still matches "mañana" and
-   "cafe" matches "café"; ignores ¿¡ and punctuation. The feedback still SHOWS the
-   correctly-accented answer, so the spelling is still taught. */
-function norm(s){ return (s||"").toLowerCase().trim().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[.,!?;:„“”"¿¡«»]/g,"").replace(/\s+/g," ").trim(); }
+/* Accent-insensitive: strips diacritics (Greek tonos included) and punctuation
+   (the Greek question mark is ";"). Used to compare English glosses and options.
+   Typed fill-in answers go through answerKey() instead — see submitFill(). */
+function norm(s){ return (s||"").toLowerCase().trim().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/ς/g,"σ").replace(/[.,!?;:„“”"«»·;·]/g,"").replace(/\s+/g," ").trim(); }
+
+/* ===== GREEK ON SCREEN =====
+   Every Greek word the learner sees can carry its pronunciation in Latin letters
+   (translit() in greek.js). S.showTr switches it; the pronunciation always sits in
+   .tri / .trb / .trs elements and body.notr hides them, so the "Aa" toggle never
+   needs a re-render. A question flagged notr (alphabet reading drills) never shows
+   it — there the pronunciation IS the answer. */
+const GR_RUN = /[Ͱ-Ͽἀ-῿](?:[Ͱ-Ͽἀ-῿\s\-]*[Ͱ-Ͽἀ-῿])?/g;
+function trInline(text){ return `<span class="tri">${escapeHtml(translit(text))}</span>`; }
+/* plain text -> HTML, pronunciation after each run of Greek words (question text) */
+function grInline(s, notr){
+  const e=escapeHtml(s);
+  return notr ? e : e.replace(GR_RUN, run => run + trInline(run));
+}
+/* plain text -> HTML, pronunciation of the whole line underneath (options, tiles) */
+function grBlock(s, notr){
+  const e=escapeHtml(s);
+  return (!notr && hasGreek(s)) ? `${e}<span class="trb">${escapeHtml(translit(s))}</span>` : e;
+}
+function applyTr(){ document.body.classList.toggle("notr", !S.showTr); const b=document.getElementById("hudTr"); if(b){ b.classList.toggle("on", !!S.showTr); b.setAttribute("aria-pressed", S.showTr?"true":"false"); } }
+function toggleTr(){ S.showTr=!S.showTr; save(); applyTr(); mascot("idle", S.showTr ? "Pronunciation on · Aa" : "Pronunciation off — Greek only 💪"); }
 function todayKey(){ return new Date().toDateString(); }
 function daysBetween(aStr,bStr){ const a=new Date(aStr); a.setHours(0,0,0,0); const b=new Date(bStr); b.setHours(0,0,0,0); return Math.round((b-a)/864e5); }
 /* Advance the daily streak for ANY completed activity (story/review/match/boss/practice).
@@ -159,26 +186,26 @@ const VIEWS = ["home","reading","quiz","lesson","results","placement","match"];
 function show(id){ VIEWS.forEach(v=>document.getElementById(v).classList.toggle("hidden", v!==id)); window.scrollTo(0,0); }
 
 /* ===== VOCAB / SRS ===== */
-function enrollWord(es, box){
-  es = vkey(es);
-  const info = VOCAB_INDEX[es]; if(!info) return;
-  if(!S.vocab[es]){ S.vocab[es] = { en:info.en, box:box||0, due:Date.now()+LEITNER_DAYS[box||0]*864e5, reps:0, correct:0, wrong:0, added:Date.now() }; }
+function enrollWord(gr, box){
+  gr = vkey(gr);
+  const info = VOCAB_INDEX[gr]; if(!info) return;
+  if(!S.vocab[gr]){ S.vocab[gr] = { en:info.en, box:box||0, due:Date.now()+LEITNER_DAYS[box||0]*864e5, reps:0, correct:0, wrong:0, added:Date.now() }; }
 }
-function reviewWord(es, correct){
-  const v = S.vocab[es]; if(!v) return;
+function reviewWord(gr, correct){
+  const v = S.vocab[gr]; if(!v) return;
   v.reps++;
   if(correct){ v.correct++; v.box = Math.min(v.box+1, 5); }
   else { v.wrong++; v.box = Math.max(v.box-1, 0); }
   v.due = Date.now() + (correct ? LEITNER_DAYS[v.box]*864e5 : 6*36e5); // wrong -> ~6h
 }
-function dueAll(){ const now=Date.now(); return Object.keys(S.vocab).filter(es=>S.vocab[es] && S.vocab[es].due<=now); }
+function dueAll(){ const now=Date.now(); return Object.keys(S.vocab).filter(gr=>S.vocab[gr] && S.vocab[gr].due<=now); }
 /* Word review is strictly WORDS. Phrases live in their own review lane so a
    "word review" never quizzes a five-word sentence. */
 function dueWords(){ return dueAll().filter(isWord); }
 function duePhrases(){ return dueAll().filter(isPhrase); }
 function vocabStats(){
-  const keys=Object.keys(S.vocab).filter(es=>S.vocab[es]); let learning=0, mastered=0;
-  keys.forEach(es=>{ if(S.vocab[es].box>=4) mastered++; else learning++; });
+  const keys=Object.keys(S.vocab).filter(gr=>S.vocab[gr]); let learning=0, mastered=0;
+  keys.forEach(gr=>{ if(S.vocab[gr].box>=4) mastered++; else learning++; });
   return { total:keys.length, learning, mastered };
 }
 /* Build a multiple-choice question for a vocab item.
@@ -186,19 +213,19 @@ function vocabStats(){
      question never sits next to a five-word option that gives itself away.
    - Options render through showEn(), so capitalisation is not a matching clue.
    - Safe for words she hasn't enrolled yet (targeted practice generates these). */
-function vocabQuestion(es){
-  const v = S.vocab[es], info = VOCAB_INDEX[es] || {};
+function vocabQuestion(gr){
+  const v = S.vocab[gr], info = VOCAB_INDEX[gr] || {};
   const rawEn = (v && v.en) || info.en || "";
   if(!rawEn) return null;
-  const kind = isPhrase(es) ? "phrase" : "word";
-  const correct = showEn(es, rawEn);
+  const kind = isPhrase(gr) ? "phrase" : "word";
+  const correct = showEn(gr, rawEn);
   const used = new Set([norm(correct)]);
   // Same kind AND same shape. 34 English glosses legitimately start with a capital
   // ("I want", "I'm from", "OK") — as the only capitalised option, the right
   // answer would give itself away. Prefer distractors that share its first-letter
   // case; fall back to the rest only if there aren't enough.
-  const capital = s => /^[A-ZÁÉÍÓÚÑ]/.test(s);
-  const all = Object.keys(VOCAB_INDEX).filter(w => w!==es && VOCAB_INDEX[w].kind===kind);
+  const capital = s => /^[A-Z]/.test(s);
+  const all = Object.keys(VOCAB_INDEX).filter(w => w!==gr && VOCAB_INDEX[w].kind===kind);
   const same = shuffle(all.filter(w => capital(showEn(w, VOCAB_INDEX[w].en)) === capital(correct)));
   const sameSet = new Set(same);
   const pool = same.concat(shuffle(all.filter(w => !sameSet.has(w))));
@@ -210,7 +237,7 @@ function vocabQuestion(es){
   }
   if(!distractors.length) return null;
   const opts = shuffle([correct, ...distractors]);
-  return { q:`¿Qué significa “${showEs(es)}”?`, opts, a:opts.indexOf(correct), skill:"vocab-daily", _vocab:es };
+  return { q:`What does «${showGr(gr)}» mean?`, opts, a:opts.indexOf(correct), skill:"vocab-daily", _vocab:gr };
 }
 function shuffle(a){ a=a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
@@ -259,8 +286,9 @@ function dailyRing(){
 }
 function renderHud(){
   applyLevelColor();
+  applyTr();
   document.getElementById("hudLevel").textContent = lvlLabel(S.level)+" ⚙";
-  document.getElementById("hudStreak").innerHTML = `🔥 ${S.streak}<small>${S.streak===1?"día":"días"}</small>`;
+  document.getElementById("hudStreak").innerHTML = `🔥 ${S.streak}<small>${S.streak===1?"day":"days"}</small>`;
   document.getElementById("hudXp").innerHTML = `★ ${S.xp}<small>XP</small>`;
   document.getElementById("hudGoal").innerHTML = dailyRing();
 }
@@ -281,16 +309,17 @@ function bossAvailable(){
 
 function renderHome(){
   renderHud();
+  // Greeks say καλημέρα until early afternoon and καλησπέρα after that.
   const hour=new Date().getHours();
-  const greet = hour<12?"Buenos días" : hour<19?"Buenas tardes" : "Buenas noches";
+  const greet = hour>=4 && hour<14 ? ["Καλημέρα","good morning"] : ["Καλησπέρα","good evening"];
   const doneToday = S.lastDate===todayKey();
   let sub;
   if(doneToday) sub = S.streak>0 ? `Day ${S.streak} done today — nice work. 🔥` : "Nice work today!";
   else if(S.streak>0) sub = `Keep your ${S.streak}-day streak alive today, ${LEARNER}! 🔥`;
-  else sub = S.xp>0 ? "Welcome back — let's keep that Spanish rolling." : "Let's learn some Spanish. ¡Vámonos! 🇲🇽";
+  else sub = S.xp>0 ? "Welcome back — let's keep the Greek rolling." : `Let's learn some Greek. ${grInline("Πάμε!")} — let's go! 🇬🇷`;
   const freezeLine = (S.freezes>0 && !doneToday && S.streak>0)
     ? `<div class="sub" style="margin-top:3px">🛡️ ${S.freezes} streak freeze${S.freezes>1?'s':''} banked — one missed day won't break it.</div>` : "";
-  document.getElementById("welcome").innerHTML = `<div class="hi">${greet}, ${LEARNER} 👋</div><div class="sub">${sub}</div>${freezeLine}`;
+  document.getElementById("welcome").innerHTML = `<div class="hi">${greet[0]}, ${LEARNER} 👋</div><div class="sub"><span class="trq">${escapeHtml(translit(greet[0]))} = ${greet[1]}.</span> ${sub}</div>${freezeLine}`;
 
   // dynamic cards: SRS review, weak spots, boss
   let cards="";
@@ -301,22 +330,22 @@ function renderHome(){
   const due=dueWords(), duePh=duePhrases();
   if(due.length + duePh.length >= 4){
     if(due.length){
-      cards += `<div class="review srs"><h3>🧠 Palabras para repasar · Word review</h3><div class="desc">${due.length} single word${due.length>1?"s are":" is"} due — a quick spaced-repetition round keeps them locked in.</div><button class="btn small" style="background:var(--sage)" onclick="startSrs()">Repasar (${Math.min(due.length,8)}) · Review</button></div>`;
+      cards += `<div class="review srs"><h3>🧠 Word review</h3><div class="desc">${due.length} single word${due.length>1?"s are":" is"} due — a quick spaced-repetition round keeps them locked in.</div><button class="btn small" style="background:var(--sage)" onclick="startSrs()">Review (${Math.min(due.length,8)})</button></div>`;
     }
     if(duePh.length){
-      cards += `<div class="review srs"><h3>🗣️ Frases para repasar · Phrase review</h3><div class="desc">${duePh.length} phrase${duePh.length>1?"s and set expressions are":" is"} due — these are learned as whole units, not word by word.</div><button class="btn small" style="background:var(--sage)" onclick="startPhraseReview()">Repasar (${Math.min(duePh.length,8)}) · Review</button></div>`;
+      cards += `<div class="review srs"><h3>🗣️ Phrase review</h3><div class="desc">${duePh.length} phrase${duePh.length>1?"s and set expressions are":" is"} due — these are learned as whole units, not word by word.</div><button class="btn small" style="background:var(--sage)" onclick="startPhraseReview()">Review (${Math.min(duePh.length,8)})</button></div>`;
     }
   }
   if(bossAvailable()){
     const nxt=LEVELS[levelIdx(S.level)+1];
-    cards += `<div class="review boss"><h3>🏆 El jefe · Boss checkpoint · ${lvlLabel(S.level)}</h3><div class="desc">You've done the ${lvlLabel(S.level)} stories. Pass this mixed challenge (80%+) to certify it and unlock ${lvlLabel(nxt)}.</div><button class="btn small bossbtn" onclick="startBoss()">¡Acepto el reto! · Take the challenge</button></div>`;
+    cards += `<div class="review boss"><h3>🏆 Boss checkpoint · ${lvlLabel(S.level)}</h3><div class="desc">You've done the ${lvlLabel(S.level)} stories. Pass this mixed challenge (80%+) to certify it and unlock ${lvlLabel(nxt)}.</div><button class="btn small bossbtn" onclick="startBoss()">Take the challenge</button></div>`;
   }
   const weak=weakSkills();
   if(weak.length){
-    cards += `<div class="review"><h3>🎯 Puntos débiles · Weak spots</h3><div class="desc">Things to shore up, based on what's been missed. Each one opens a lesson and then a real drill — get 70%+ and it clears off this list.</div>${
+    cards += `<div class="review"><h3>🎯 Weak spots</h3><div class="desc">Things to shore up, based on what's been missed. Each one opens a lesson and then a real drill — get 70%+ and it clears off this list.</div>${
       weak.map(k=>{
         const cnt=practiceSet(k, PRACTICE_N).length;   // pure — enrollment happens in startPractice
-        return `<div class="weakrow"><div class="wn">${SKILLS[k].name}<small>missed ${S.miss[k]}× · ${cnt} ejercicios ready</small></div><button class="btn small" style="background:var(--gold)" onclick="openLesson('${k}')">Practicar</button></div>`;
+        return `<div class="weakrow"><div class="wn">${SKILLS[k].name}<small>missed ${S.miss[k]}× · ${cnt} exercises ready</small></div><button class="btn small" style="background:var(--gold)" onclick="openLesson('${k}')">Practice</button></div>`;
       }).join("")
     }</div>`;
   }
@@ -324,36 +353,38 @@ function renderHome(){
 
   // always-available practice: word match
   document.getElementById("practiceBox").innerHTML = matchAvailable()
-    ? `<div class="review practice"><h3>🃏 Parejas · Word match</h3><div class="desc">Quick recap — match recent Spanish words to their English. Jump in anytime.</div><button class="btn small" style="background:var(--lvl)" onclick="startMatch()">Jugar · Play</button></div>`
+    ? `<div class="review practice"><h3>🃏 Word match</h3><div class="desc">Quick recap — match recent Greek words to their English. Jump in anytime.</div><button class="btn small" style="background:var(--lvl)" onclick="startMatch()">Play</button></div>`
     : "";
 
-  // level card
+  // level card — with every level one tap away: placement suggests, it never locks
   document.getElementById("lvlTitle").textContent = `${lvlLabel(S.level)} · ${LEVEL_NAMES[S.level]}`;
   const idx=levelIdx(S.level), top=idx>=LEVELS.length-1;
-  document.getElementById("lvlGoal").textContent = top ? "nivel máximo" : "jefe o 3× 85% → sube";
+  document.getElementById("lvlGoal").textContent = top ? "top level" : "boss or 3× 85% → up";
   const sr=Math.min(strongRounds(),3); let dots="";
   for(let i=0;i<3;i++) dots+=`<div class="dot ${i<sr?'on':''}"></div>`;
   document.getElementById("lvlDots").innerHTML = dots;
   document.getElementById("lvlHint").textContent = top
-    ? "Top of the sprint — you can get around and chat. Reviews keep it all fresh."
+    ? "Top level — you're past where Duolingo stops. Reviews keep it all fresh."
     : `Strong rounds: ${sr}/3. Beat the boss or score 85%+ three times to reach ${lvlLabel(LEVELS[idx+1])}.`;
+  document.getElementById("lvlChips").innerHTML = `<span class="chiplabel">Jump to:</span>` + LEVELS.map(l=>
+    `<button class="lchip ${l===S.level?'sel':''}" onclick="pickLevel('${l}')" aria-label="${lvlLabel(l)}: ${LEVEL_NAMES[l]}">${l.slice(1)}</button>`).join("");
 
   // vocab mastery strip
   const vs=vocabStats();
   document.getElementById("vocabStrip").innerHTML = vs.total
-    ? `<div class="vstrip"><span>📖 Palabras</span><b>${vs.total}</b> learned · <b>${vs.mastered}</b> mastered · <b>${vs.learning}</b> learning</div>` : "";
+    ? `<div class="vstrip"><span>📖 Words</span><b>${vs.total}</b> learned · <b>${vs.mastered}</b> mastered · <b>${vs.learning}</b> learning</div>` : "";
 
   // badges
   const earned=Object.keys(S.badges).filter(id=>BADGES[id]);
   document.getElementById("badgeStrip").innerHTML = earned.length
-    ? `<div class="sechead" style="margin-top:6px">Insignias · Badges</div><div class="badges">${earned.map(id=>`<div class="badge" title="${BADGES[id].desc}">${BADGES[id].icon}<span>${BADGES[id].name}</span></div>`).join("")}</div>` : "";
+    ? `<div class="sechead" style="margin-top:6px">Badges</div><div class="badges">${earned.map(id=>`<div class="badge" title="${BADGES[id].desc}">${BADGES[id].icon}<span>${BADGES[id].name}</span></div>`).join("")}</div>` : "";
 
   // grammar lessons (Language Lab) — only where lessons exist for this level
   const lessons=lessonsAt(S.level);
   document.getElementById("lessonSec").innerHTML = lessons.length
-    ? `<div class="sechead">Lecciones · Power lessons</div>` + lessons.map(l=>{
+    ? `<div class="sechead">Power lessons</div>` + lessons.map(l=>{
         const done=!!S.lessonsDone[l.id];
-        return `<div class="story-card ${done?'done':''}" onclick="openGrammarLesson('${l.id}')"><div class="story-num">${done?'✓':'📘'}</div><div class="story-meta"><div class="t">${l.title}</div><div class="e">${l.titleEn}</div></div></div>`;
+        return `<div class="story-card ${done?'done':''}" onclick="openGrammarLesson('${l.id}')"><div class="story-num">${done?'✓':'📘'}</div><div class="story-meta"><div class="t">${l.titleEn}</div><div class="e">${grInline(l.title)}</div></div></div>`;
       }).join("")
     : "";
 
@@ -361,7 +392,7 @@ function renderHome(){
   const list=storiesAt(S.level);
   document.getElementById("storyList").innerHTML = list.map((s,i)=>{
     const st=S.stars[s.id]||0, done=S.stars.hasOwnProperty(s.id);
-    return `<div class="story-card ${done?'done':''}" onclick="openStory('${s.id}')"><div class="story-num">${done?'✓':i+1}</div><div class="story-meta"><div class="t">${s.titleEs}</div><div class="e">${s.titleEn}</div></div><div class="stars">${starString(st)}</div></div>`;
+    return `<div class="story-card ${done?'done':''}" onclick="openStory('${s.id}')"><div class="story-num">${done?'✓':i+1}</div><div class="story-meta"><div class="t">${grInline(s.titleGr)}</div><div class="e">${s.titleEn}</div></div><div class="stars">${starString(st)}</div></div>`;
   }).join("");
 
   document.getElementById("footer").classList.add("hidden");
@@ -374,15 +405,15 @@ let current=null, mode="story", practiceSkill=null;
 function openStory(id){
   mode="story";
   current=STORIES.find(s=>s.id===id);
-  document.getElementById("rTitle").textContent=current.titleEs;
+  document.getElementById("rTitle").innerHTML=grInline(current.titleGr);
   document.getElementById("rSub").textContent=current.titleEn;
   document.getElementById("rBody").innerHTML=renderReadingBody(current.text);
-  document.getElementById("rGloss").innerHTML=buildGlossary(current.text).map(([es,en])=>`<div class="gi"><span class="es">${es}</span><span class="en">${en}</span><button class="gsp" aria-label="Escuchar">🔊</button></div>`).join("");
-  document.querySelectorAll("#rGloss .gi").forEach(row=>{ const es=row.querySelector(".es").textContent; row.onclick=()=>speakWord(es); });
+  document.getElementById("rGloss").innerHTML=buildGlossary(current.text).map(([gr,en])=>`<div class="gi" data-gr="${escapeHtml(gr)}"><span class="gr">${escapeHtml(gr)}<span class="trb">${escapeHtml(translit(gr))}</span></span><span class="en">${en}</span><button class="gsp" aria-label="Listen">🔊</button></div>`).join("");
+  document.querySelectorAll("#rGloss .gi").forEach(row=>{ const gr=row.dataset.gr; row.onclick=()=>speakWord(gr); });
   bindGlosses(); show("reading"); resetPlayer();
   const f=document.getElementById("footer"); f.classList.remove("hidden");
-  const b=document.getElementById("footerBtn"); b.textContent="¡Al quiz! · Start quiz"; b.onclick=startQuiz;
-  mascot("read","Toca las palabras 👇");
+  const b=document.getElementById("footerBtn"); b.textContent="Start quiz →"; b.onclick=startQuiz;
+  mascot("read","Tap the words 👇");
 }
 function bindGlosses(){
   document.querySelectorAll("#rBody .gloss").forEach(g=>{
@@ -391,9 +422,9 @@ function bindGlosses(){
       document.querySelectorAll(".gloss.active").forEach(x=>x.classList.remove("active"));
       if(!wasActive){
         g.classList.add("active");
-        const es=g.firstChild.textContent.trim(); enrollWord(es,1); save();
+        const gr=g.dataset.gr; enrollWord(gr,1); save();
         if(g.dataset.i) wIndex=+g.dataset.i;   // tapping a word moves the player cursor there
-        highlightWord(wIndex); speakWord(es);
+        highlightWord(wIndex); speakWord(gr);
       }
       e.stopPropagation();
     };
@@ -404,56 +435,60 @@ document.body.addEventListener("click",()=>document.querySelectorAll(".gloss.act
 /* ---- Read-aloud: word-by-word player (⏮ ▶/⏸ ⏭) ---- */
 let words=[], wIndex=0, playing=false, playRate=1;
 /* ---- Voice picking ----
-   "Just take the first es-MX voice" picks whatever the OS lists first, and on Apple
-   devices that is usually a NOVELTY voice (Eddy, Rocko, Grandma…) — the lofi robot
-   sound. Rank real voices first, let the learner choose, remember it (S.voiceURI). */
+   Rank the device's Greek voices (el-GR first, downloaded HD voices up), let the
+   learner choose, remember it (S.voiceURI). The novelty filter is inherited from
+   Spanish Quest, where "first voice in the list" turned out to be Apple's robot
+   Eddy; harmless for Greek and it keeps any future novelty voice at the bottom. */
 const NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley|bells|boing|bubbles|jester|organ|superstar|trinoids|whisper|wobble|zarvox|bahh|albert|bad news|good news|cellos)\b/i;
-const VOICE_SEX = { paulina:"♀", "mónica":"♀", monica:"♀", marisol:"♀", angelica:"♀", "angélica":"♀",
-  esperanza:"♀", isabela:"♀", ximena:"♀", sandy:"♀", flo:"♀", shelley:"♀", grandma:"♀",
-  juan:"♂", jorge:"♂", diego:"♂", carlos:"♂", javier:"♂", eddy:"♂", reed:"♂", rocko:"♂", grandpa:"♂" };
+const VOICE_SEX = { melina:"♀", "μελίνα":"♀", nikos:"♂", "νίκος":"♂" };
 function voiceName(v){ return (v.name||"").split(" (")[0].trim(); }
 function voiceSex(v){ return VOICE_SEX[voiceName(v).toLowerCase()] || ""; }
 function isEnhanced(v){ return /enhanced|premium|neural|siri/i.test((v.name||"")+" "+(v.voiceURI||"")); }
 function voiceLang(v){ return (v.lang||"").toLowerCase().replace("_","-"); }
 function voiceScore(v){
   const l=voiceLang(v);
-  let s = l==="es-mx" ? 100 : (l==="es-us"||l==="es-419") ? 70 : l.startsWith("es") ? 40 : 0;
+  let s = l==="el-gr" ? 100 : l.startsWith("el") ? 80 : 0;
   if(isEnhanced(v)) s+=30;                 // downloaded HD voice — much better
-  // Apple's novelty voices last — a real Spain voice reads better than a Mexican
-  // robot, so the penalty has to outweigh the whole es-MX bonus.
   if(NOVELTY.test(v.name||"")) s-=90;
   return s;
 }
-function esVoices(){
+function grVoices(){
   if(!("speechSynthesis" in window)) return [];
-  return speechSynthesis.getVoices().filter(v=>voiceLang(v).startsWith("es"))
+  return speechSynthesis.getVoices().filter(v=>voiceLang(v).startsWith("el"))
     .sort((a,b)=> voiceScore(b)-voiceScore(a) || voiceName(a).localeCompare(voiceName(b)));
 }
-function esVoice(){
-  const all=esVoices(); if(!all.length) return null;
+function grVoice(){
+  const all=grVoices(); if(!all.length) return null;
   return (S.voiceURI && all.find(v=>v.voiceURI===S.voiceURI)) || all[0];
 }
-/* One place that builds every utterance, so voice/volume/pitch can't drift apart. */
+/* One place that builds every utterance, so voice/volume/pitch can't drift apart.
+   With no Greek voice found yet, lang alone still lets iOS pick its Greek voice. */
 function utter(text){
   const u=new SpeechSynthesisUtterance(text);
-  const v=esVoice();
-  u.lang = v ? v.lang : "es-MX";
+  const v=grVoice();
+  u.lang = v ? v.lang : "el-GR";
   if(v) u.voice=v;
   u.volume=1; u.pitch=1;
   return u;
 }
-/* tokenize story into words (glosses stay one tappable token); build words[] for TTS */
+/* Tokenize the story into words (glosses stay one tappable token) and build words[]
+   for read-aloud. Each Greek token is a little two-line stack: the word, and its
+   pronunciation underneath (.trs, hidden by body.notr). */
+function stack(gr, extra){
+  return `<span class="ws"><span class="wg">${gr}</span><span class="trs">${escapeHtml(translit(gr))}</span></span>${extra||""}`;
+}
 function renderReadingBody(text){
   words=[]; let html=""; const re=/(\[[^|\]]+\|[^\]]+\])|(\s+)|([^\s\[]+)/g; let m;
   while((m=re.exec(text))){
     if(m[1]){ const g=/\[([^|\]]+)\|([^\]]+)\]/.exec(m[1]); const i=words.length; words.push(g[1]);
-      html+=`<span class="gloss wtok" data-i="${i}">${g[1]}<span class="pop">${g[2]}</span></span>`; }
+      html+=`<span class="gloss wtok" data-i="${i}" data-gr="${escapeHtml(g[1])}">${stack(escapeHtml(g[1]), `<span class="pop">${g[2]}</span>`)}</span>`; }
     else if(m[2]){ html+=m[2]; }
-    else { const i=words.length; words.push(m[3]); html+=`<span class="wtok" data-i="${i}">${m[3]}</span>`; }
+    else { const i=words.length; words.push(m[3]);
+      html+= hasGreek(m[3]) ? `<span class="wtok" data-i="${i}">${stack(escapeHtml(m[3]))}</span>` : `<span class="wtok" data-i="${i}">${escapeHtml(m[3])}</span>`; }
   }
   return html;
 }
-function playerText(w){ return (w||"").replace(/[„“”"»«()\[\]{}.,!?¿¡;:—–…]/g," ").replace(/\s+/g," ").trim(); }
+function playerText(w){ return (w||"").replace(/[„“”"»«()\[\]{}.,!?;:·;·—–…]/g," ").replace(/\s+/g," ").trim(); }
 function highlightWord(i){
   document.querySelectorAll("#rBody .wtok.speaking").forEach(x=>x.classList.remove("speaking"));
   const el=document.querySelector(`#rBody .wtok[data-i="${i}"]`);
@@ -474,7 +509,7 @@ function speakIndex(i, auto){
 function playPause(){
   const tip=document.getElementById("rTip");
   if(!("speechSynthesis" in window)){ if(tip) tip.textContent="Read-aloud isn't supported here."; return; }
-  if(!esVoice() && tip) tip.textContent="No Spanish voice on this device yet — on iPhone add “Spanish (Mexico)” in Settings ▸ Accessibility ▸ Spoken Content ▸ Voices.";
+  if(!grVoice() && tip) tip.textContent="No Spanish voice on this device yet — on iPhone add “Spanish (Mexico)” in Settings ▸ Accessibility ▸ Spoken Content ▸ Voices.";
   if(!words.length) return;
   if(playing){ playing=false; speechSynthesis.cancel(); updatePlayerUI(); }
   else { playing=true; updatePlayerUI(); speakIndex(wIndex, true); }
@@ -519,15 +554,20 @@ function renderQuestion(){
   const item=current.quiz[qIndex], total=current.quiz.length;
   let bars=""; for(let i=0;i<total;i++) bars+=`<div class="qbar ${i<=qIndex?'on':''}"></div>`;
   document.getElementById("qProgress").innerHTML=bars;
-  document.getElementById("qCount").textContent=`PREGUNTA ${qIndex+1} / ${total}`;
-  document.getElementById("qText").textContent=item.q;
+  document.getElementById("qCount").textContent=`QUESTION ${qIndex+1} / ${total}`;
+  document.getElementById("qText").innerHTML=grInline(item.q, item.notr);
   const fb=document.getElementById("qFeedback"); fb.textContent=""; fb.className="qfeedback";
   document.getElementById("qExplain").innerHTML="";
   if(item.type==="fill"){
-    document.getElementById("qOpts").innerHTML=`<input id="fillIn" class="fill" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="escribe aquí…"><button class="btn" style="margin-top:12px" onclick="submitFill()">Revisar · Check</button>`;
+    /* Nobody should need a Greek keyboard: Latin letters are accepted (answerKey).
+       "Show me" is the way out for a learner with no idea — it never dead-ends. */
+    document.getElementById("qOpts").innerHTML=`<input id="fillIn" class="fill" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Greek or Latin letters…">
+      <div class="fillhint">Latin letters are fine — e.g. <i>efharisto</i> for ευχαριστώ. Accents don't matter.</div>
+      <button class="btn" style="margin-top:12px" onclick="submitFill()">Check</button>
+      <button class="btn ghost" style="margin-top:10px" onclick="submitFill(true)">I don't know — show me</button>`;
     const inp=document.getElementById("fillIn"); inp.addEventListener("keydown",e=>{ if(e.key==="Enter") submitFill(); }); setTimeout(()=>inp.focus(),100);
   } else {
-    document.getElementById("qOpts").innerHTML=item.opts.map((o,i)=>`<button class="opt" onclick="answer(${i})">${o}</button>`).join("");
+    document.getElementById("qOpts").innerHTML=item.opts.map((o,i)=>`<button class="opt" onclick="answer(${i})">${grBlock(o, item.notr)}</button>`).join("");
   }
   window.scrollTo(0,0);
 }
@@ -538,31 +578,38 @@ function record(item, correct){
 }
 function afterAnswer(item, correct){
   const ex=document.getElementById("qExplain");
-  if(item.explain && (item.trick || !correct)) ex.innerHTML=`<div class="explain-box">💡 ${item.explain}</div>`;
+  if(item.explain && (item.trick || !correct)) ex.innerHTML=`<div class="explain-box">💡 ${speakify(item.explain, false)}</div>`;
   else if(item.trick) ex.innerHTML=`<div class="explain-box">💡 Trick question — nicely handled.</div>`;
   const f=document.getElementById("footer"); f.classList.remove("hidden");
   const b=document.getElementById("footerBtn");
-  if(qIndex<current.quiz.length-1){ b.textContent="Siguiente · Next"; b.onclick=nextQuestion; }
-  else { b.textContent="Terminar · Finish"; b.onclick=finishQuiz; }
+  if(qIndex<current.quiz.length-1){ b.textContent="Next →"; b.onclick=nextQuestion; }
+  else { b.textContent="Finish"; b.onclick=finishQuiz; }
 }
+const YAY = ["Μπράβο! · bravo","Τέλεια! · perfect","Σωστά! · correct","Ωραία! · nice","Πολύ καλά! · very good"];
+const OOPS = ["Δεν πειράζει · never mind 💪","Σιγά σιγά · step by step 💪"];
 function answer(i){
   if(qLocked) return; qLocked=true;
   const item=current.quiz[qIndex];
   document.querySelectorAll("#qOpts .opt").forEach((b,bi)=>{ b.disabled=true; if(bi===item.a) b.classList.add("correct"); if(bi===i&&i!==item.a) b.classList.add("wrong"); });
   const ok=i===item.a, fb=document.getElementById("qFeedback");
-  if(ok){ fb.textContent="¡Correcto! ✓"; fb.className="qfeedback ok"; mascot("happy", pick(["¡Excelente!","¡Muy bien!","¡Órale!","¡Eso!"])); }
-  else { fb.textContent="Casi — the green one is right."; fb.className="qfeedback no"; mascot("sad","No pasa nada 💪"); }
+  if(ok){ fb.textContent="Σωστά! ✓ Correct"; fb.className="qfeedback ok"; mascot("happy", pick(YAY)); }
+  else { fb.textContent="Not quite — the green one is right."; fb.className="qfeedback no"; mascot("sad", pick(OOPS)); }
   record(item,ok); afterAnswer(item,ok); save();
 }
-function submitFill(){
-  if(qLocked) return; qLocked=true;
+/* giveUp: the "I don't know — show me" button. Counts as a miss, shows the answer. */
+function submitFill(giveUp){
+  if(qLocked) return;
   const item=current.quiz[qIndex], inp=document.getElementById("fillIn");
-  const ok=item.a.map(norm).includes(norm(inp.value));
+  if(!giveUp && !inp.value.trim()){ inp.focus(); inp.classList.add("nudge"); setTimeout(()=>inp.classList.remove("nudge"),400); return; }
+  qLocked=true;
+  // Greek or Latin, any accents, any common spelling: efharisto = ευχαριστώ
+  const ok=!giveUp && item.a.map(answerKey).includes(answerKey(inp.value));
   inp.disabled=true; inp.classList.add(ok?"ok":"bad");
-  document.querySelector("#qOpts .btn").disabled=true;
-  const fb=document.getElementById("qFeedback");
-  if(ok){ fb.textContent="¡Correcto! ✓"; fb.className="qfeedback ok"; mascot("happy","¡Exacto!"); }
-  else { fb.textContent=`Casi — correct: “${item.a[0]}”`; fb.className="qfeedback no"; mascot("sad","¡La próxima sale! 💪"); }
+  document.querySelectorAll("#qOpts .btn").forEach(x=>x.disabled=true);
+  const fb=document.getElementById("qFeedback"), want=item.a[0];
+  const say=`<div class="fillans"><b class="say" role="button" tabindex="0" aria-label="Listen to ${escapeHtml(want)}">${escapeHtml(want)}</b> ${trInline(want)} <button class="gsp" onclick="speakWord('${escapeHtml(want).replace(/'/g,"&#39;")}')" aria-label="Listen">🔊</button></div>`;
+  if(ok){ fb.innerHTML=`Σωστά! ✓ Correct${norm(inp.value)===norm(want)?"":say}`; fb.className="qfeedback ok"; mascot("happy", pick(YAY)); }
+  else { fb.innerHTML=`${giveUp?"Here it is":"Not quite"} — the answer:${say}`; fb.className="qfeedback no"; mascot("sad", pick(OOPS)); }
   record(item,ok); afterAnswer(item,ok); save();
 }
 function nextQuestion(){ qIndex++; document.getElementById("footer").classList.add("hidden"); renderQuestion(); }
@@ -615,7 +662,7 @@ function finishQuiz(){
   const firstEver=!Object.keys(S.stars).length;
   S.stars[current.id]=Math.max(S.stars[current.id]||0, stars);
   // enroll this story's words into SRS (she has now studied them)
-  buildGlossary(current.text).forEach(([es])=>enrollWord(es,1));
+  buildGlossary(current.text).forEach(([gr])=>enrollWord(gr,1));
   // streak
   markActivity();
   // rolling avg + gentle auto-level
@@ -707,8 +754,8 @@ function skillWords(skill){
   const out=[], seen=new Set();
   STORIES.forEach(s=>{
     if(!s.quiz.some(q=>(q.skill||"comprehension")===skill)) return;
-    buildGlossary(s.text).forEach(([es])=>{
-      const k=vkey(es);
+    buildGlossary(s.text).forEach(([gr])=>{
+      const k=vkey(gr);
       if(isWord(k) && VOCAB_INDEX[k] && !seen.has(k)){ seen.add(k); out.push(k); }
     });
   });
@@ -839,16 +886,16 @@ function startPractice(skill, pool){
   // story does. Box 0 would make it due immediately and flood her word review.
   quiz.forEach(q=>{ if(q._vocab) enrollWord(q._vocab, 1); });
   save();
-  current={ titleEs:"Práctica", titleEn:SKILLS[skill].name, quiz };
+  current={ titleGr:"Práctica", titleEn:SKILLS[skill].name, quiz };
   startQuiz();
 }
 
 /* ===== SRS REVIEW SESSIONS (words and phrases kept separate) ===== */
-function startVocabSession(keys, titleEs, titleEn){
+function startVocabSession(keys, titleGr, titleEn){
   const quiz = shuffle(keys).slice(0,8).map(vocabQuestion).filter(Boolean);
   if(!quiz.length){ goHome(); return; }
   mode="srs";
-  current={ titleEs, titleEn, quiz };
+  current={ titleGr, titleEn, quiz };
   startQuiz();
 }
 function startSrs(){ startVocabSession(dueWords(), "Repaso de palabras", "Word review"); }
@@ -862,16 +909,16 @@ let matchBoards=[], matchBoardIdx=0, matchPairs=[], matchLeft=[], matchRight=[],
     selL=null, selR=null, matchLock=false, matchedThisBoard=0,
     matchClean=0, matchTotal=0, matchDirty=new Set();
 
-function matchEnFor(es){ return (S.vocab[es]&&S.vocab[es].en) || (VOCAB_INDEX[es]&&VOCAB_INDEX[es].en) || ""; }
+function matchEnFor(gr){ return (S.vocab[gr]&&S.vocab[gr].en) || (VOCAB_INDEX[gr]&&VOCAB_INDEX[gr].en) || ""; }
 function recentVocab(limit){
   // WORDS ONLY (phrases have their own review lane), most-recently-learned first;
   // top up from the current level's stories if she's new
-  let keys=Object.keys(S.vocab).filter(es=>isWord(es) && matchEnFor(es));
+  let keys=Object.keys(S.vocab).filter(gr=>isWord(gr) && matchEnFor(gr));
   keys.sort((a,b)=>(S.vocab[b].added||0)-(S.vocab[a].added||0) || (S.vocab[a].due-S.vocab[b].due));
   let pool=keys.slice(0,limit);
   if(pool.length<6){
     const seen=new Set(pool);
-    storiesAt(S.level).forEach(s=>buildGlossary(s.text).forEach(([es])=>{ const k=vkey(es); if(isWord(k)&&!seen.has(k)&&VOCAB_INDEX[k]){ seen.add(k); pool.push(k); } }));
+    storiesAt(S.level).forEach(s=>buildGlossary(s.text).forEach(([gr])=>{ const k=vkey(gr); if(isWord(k)&&!seen.has(k)&&VOCAB_INDEX[k]){ seen.add(k); pool.push(k); } }));
     pool=pool.slice(0,Math.max(6,limit));
   }
   return pool;
@@ -885,8 +932,8 @@ function startMatch(){
   // On one board that renders as two identical buttons — either tap validates, so it
   // doesn't mis-grade, it just looks broken. Keep the first of each meaning.
   const seenEn=new Set();
-  const pool=shuffle(recentVocab(18)).filter(es=>{
-    const en=norm(showEn(es, matchEnFor(es)));
+  const pool=shuffle(recentVocab(18)).filter(gr=>{
+    const en=norm(showEn(gr, matchEnFor(gr)));
     if(!en || seenEn.has(en)) return false;
     seenEn.add(en); return true;
   });
@@ -895,7 +942,7 @@ function startMatch(){
      recentVocab() tops up from the current level's stories, so the tiles can be words that
      were never enrolled — and reviewWord() silently bails on those, meaning a full round
      credited nothing to the review system. */
-  pool.forEach(es=>enrollWord(es,1)); save();
+  pool.forEach(gr=>enrollWord(gr,1)); save();
   matchBoards=[]; for(let i=0;i<pool.length;i+=6) matchBoards.push(pool.slice(i,i+6));
   // don't leave a lonely 1-word final board
   if(matchBoards.length>1 && matchBoards[matchBoards.length-1].length===1){
@@ -908,17 +955,17 @@ function startMatch(){
 }
 function renderMatchBoard(){
   matchLock=false; selL=null; selR=null; matchedThisBoard=0; matchDirty=new Set();
-  // Display through showEs/showEn so a capital on one side never lines up with a
+  // Display through showGr/showEn so a capital on one side never lines up with a
   // capital on the other — matching has to be done on meaning, not on shape.
-  matchPairs=matchBoards[matchBoardIdx].map(es=>({es, en:showEn(es, matchEnFor(es))}));
-  matchLeft=shuffle(matchPairs.map(p=>p.es));
+  matchPairs=matchBoards[matchBoardIdx].map(gr=>({gr, en:showEn(gr, matchEnFor(gr))}));
+  matchLeft=shuffle(matchPairs.map(p=>p.gr));
   matchRight=shuffle(matchPairs.map(p=>p.en));
   document.getElementById("match").innerHTML=`
     <div class="topnav"><button class="back" onclick="goHome()">‹ Atrás</button></div>
     <div class="qcount" id="mCount"></div>
     <div class="mtip">Une las parejas · Tap a Spanish word, then its English match.</div>
     <div class="cols">
-      <div class="mcol es">${matchLeft.map((es,i)=>`<button class="mbtn" id="L${i}" onclick="matchTap('L',${i})">${showEs(es)}</button>`).join("")}</div>
+      <div class="mcol gr">${matchLeft.map((gr,i)=>`<button class="mbtn" id="L${i}" onclick="matchTap('L',${i})">${showGr(gr)}</button>`).join("")}</div>
       <div class="mcol en">${matchRight.map((en,i)=>`<button class="mbtn" id="R${i}" onclick="matchTap('R',${i})">${en}</button>`).join("")}</div>
     </div>`;
   updateMatchCount();
@@ -937,20 +984,20 @@ function matchTap(side,i){
   if(selL!=null && selR!=null) evalMatch();
 }
 function evalMatch(){
-  const es=matchLeft[selL], en=matchRight[selR];
+  const gr=matchLeft[selL], en=matchRight[selR];
   const lb=document.getElementById("L"+selL), rb=document.getElementById("R"+selR);
-  if(showEn(es, matchEnFor(es))===en){
+  if(showEn(gr, matchEnFor(gr))===en){
     lb.classList.remove("sel"); rb.classList.remove("sel");
     lb.classList.add("matched"); rb.classList.add("matched");
-    const wasDirty=matchDirty.has(es);
-    reviewWord(es, !wasDirty);            // clean match advances SRS; messy one re-queues sooner
+    const wasDirty=matchDirty.has(gr);
+    reviewWord(gr, !wasDirty);            // clean match advances SRS; messy one re-queues sooner
     matchTotal++; if(!wasDirty) matchClean++;
     matchedThisBoard++; selL=null; selR=null;
     save(); updateMatchCount();
     mascot("happy", pick(["✓","¡Eso!","¡Exacto!","¡Bravo!"]));
     if(matchedThisBoard>=matchPairs.length){ matchLock=true; setTimeout(nextMatchBoard,650); }
   } else {
-    matchLock=true; matchDirty.add(es);
+    matchLock=true; matchDirty.add(gr);
     lb.classList.add("bad"); rb.classList.add("bad");
     mascot("sad","Otra vez");
     const sl=selL, sr=selR;
@@ -994,7 +1041,7 @@ function startBoss(){
     pool=pool.concat(lang);
   }
   pool=shuffle(pool).slice(0, Math.min(8, pool.length));
-  current={ titleEs:"El jefe", titleEn:`${lvlLabel(lvl)} boss challenge`, quiz:pool };
+  current={ titleGr:"El jefe", titleEn:`${lvlLabel(lvl)} boss challenge`, quiz:pool };
   mascot("think","¡A ver qué sabes! 💪", true);
   startQuiz();
 }
@@ -1018,7 +1065,7 @@ function openGrammarLesson(id){
 function startGrammarPractice(id){
   const l=(window.LESSONS||[]).find(x=>x.id===id); if(!l) return;
   mode="grammar"; currentLessonId=id;
-  current={ titleEs:l.title, titleEn:l.titleEn, quiz:shuffle((l.practice||[]).slice()).slice(0,6) };
+  current={ titleGr:l.title, titleEn:l.titleEn, quiz:shuffle((l.practice||[]).slice()).slice(0,6) };
   startQuiz();
 }
 
@@ -1027,8 +1074,8 @@ function startGrammarPractice(id){
    shares its first 4 letters with an English word in the gloss. Catches
    tour/taxi/hotel/papaya/concierto; a false positive only shrinks the pool. */
 function isFreebie(k){
-  const es=norm(k.replace(ARTICLE_RE,"")), en=norm((VOCAB_INDEX[k]||{}).en||"");
-  return es.length>=4 && en.split(" ").some(w=>w.startsWith(es.slice(0,4)));
+  const gr=norm(k.replace(ARTICLE_RE,"")), en=norm((VOCAB_INDEX[k]||{}).en||"");
+  return gr.length>=4 && en.split(" ").some(w=>w.startsWith(gr.slice(0,4)));
 }
 let placeIdx=0, placeScore={}, placeQs=[];
 function buildPlacement(){
@@ -1121,7 +1168,7 @@ function setName(v){
 const VOICE_SAMPLE = "¡Hola! ¿Me da tres tacos, por favor?";
 function renderVoiceBox(){
   const box=document.getElementById("voiceBox"); if(!box) return;
-  const all=esVoices(), cur=esVoice();
+  const all=grVoices(), cur=grVoice();
   if(!("speechSynthesis" in window)){ box.innerHTML=`<div class="rem-h">🔊 Voz · Voice</div><p class="rem-note">This browser can't do read-aloud.</p>`; return; }
   const tip = `<p class="rem-note">Want it to sound properly human? Download an HD voice — <b>iPhone:</b> Settings ▸ Accessibility ▸ Spoken Content ▸ Voices ▸ Spanish (Mexico) → pick <b>Paulina</b> or <b>Juan</b> and tap the download arrow (Enhanced/Premium). <b>Mac:</b> System Settings ▸ Accessibility ▸ Spoken Content ▸ System Voice ▸ Manage Voices. It shows up here right after.</p>`;
   if(!all.length){
