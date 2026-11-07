@@ -4,9 +4,9 @@
    (orsag87.github.io), and Cache Storage is per-origin — so only ever delete OUR OWN old
    caches (prefix match), never "everything that isn't CACHE", or we'd wipe theirs. */
 const PREFIX = "greek-quest-";
-const CACHE = PREFIX + "v2";
+const CACHE = PREFIX + "v3";
 /* Keep the ?v= in step with the <script> tags in index.html. */
-const ASSETS = ["./", "./index.html", "./greek.js?v=2", "./app.js?v=2", "./content.js?v=2", "./manifest.json"];
+const ASSETS = ["./", "./index.html", "./greek.js?v=3", "./app.js?v=3", "./content.js?v=3", "./manifest.json"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
