@@ -18,3 +18,14 @@ generated pronunciation layer (Aa toggle), Latin-letter typed answers, Feta the 
 **Verified:** validator OK (448 flashcards), test_greek OK (65/73/10); browser sweep at 375px — every story,
 question, lesson and skill renders, notr never leaks, every fill accepts its pronunciation, boss pools 8 standalone
 questions, 500 random guessers → L0 96% / L1 4% / L2 0.4%, no console errors. Release v4.
+
+**Shipped:** public repo `orsag87/greek-quest`, GitHub Pages from `main` → https://orsag87.github.io/greek-quest/
+(all 10 assets 200, serves `?v=4` / `greek-quest-v4`, live page boots to the welcome with no console errors).
+
+ALE3IA: no task bound — Direct work, no DOCUMENT stamp. Not a BOSS/128s session → no board entry.
+
+## Next
+Done = the friend has used it and a Greek speaker has ticked `_PIPELINE_FIXES.md` §1; checked by that list and
+`node tools/validate_content.js` + `node tools/test_greek.js` both printing OK after any content edit.
+First step: collect the friend's feedback (where they placed, anything confusing). Read first: `_PIPELINE_FIXES.md`,
+`README.md` ("Pushing an update": bump `?v=` + `CACHE` together).
