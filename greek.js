@@ -37,7 +37,7 @@
   const strip = ch => ({ "ά":"α","έ":"ε","ή":"η","ί":"ι","ό":"ο","ύ":"υ","ώ":"ω","ϊ":"ι","ϋ":"υ","ΐ":"ι","ΰ":"υ" }[ch] || ch);
 
   /* Whole words whose spelling misleads the rules. */
-  const OVERRIDE = { "συγγνώμη":"signómi" };
+  const OVERRIDE = { "συγγνώμη":"signómi", "πέμπτη":"pémpti", "πιείτε":"pyíte" };
 
   function trWord(w){
     // w: lowercase Greek letters only
@@ -98,32 +98,48 @@
        efharisto = efcharisto = eyxaristw = ευχαριστώ
        yia sou = geia sou = ya sou = γεια σου
        dhen = den = δεν · kalimera = καλημερα */
-  function answerKey(s){
-    let t = translit(String(s || "").toLowerCase());
-    t = t.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  function answerKey(s, xAs){
+    const raw = String(s || "").toLowerCase();
+    const greek = GREEK_RE.test(raw);
+    let t = translit(raw);
+    t = t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     t = t.replace(/[^a-z0-9 ]+/g, " ");
+    if(greek){
+      t = t.replace(/x/g, "ks");                  // translit writes ξ as x; χ is already h
+    } else {
+      t = t.replace(/ey(?![aeiouy])/g, "ef").replace(/ay(?![aeiouy])/g, "af");   // greeklish υ as y: eyxaristw (typed only; yiayia keeps its y)
+      if(xAs === "ks") t = t.replace(/x/g, "ks"); // a typed x can mean ξ or χ — answerMatch tries both
+    }
     const rules = [
-      [/ey/g, "ef"], [/ay/g, "af"],               // greeklish writes υ as y: eyxaristw
+      [/oy/g, "u"], [/w/g, "o"],                  // greeklish ου as oy, ω as w (before the χ rule: exw)
       [/8/g, "th"], [/th/g, "8"],                 // θ (greeklish writes 8)
       [/dh/g, "d"],                               // δ
+      [/ks/g, "ξ"],                               // ξ gets its own token, so έξω ≠ έχω
       [/ch|kh/g, "h"], [/x(?=[aeiouy])/g, "h"],   // χ written as ch / kh / x
-      [/ks/g, "x"], [/ps/g, "ψ"],
+      [/ps/g, "ψ"],
       [/gh/g, "g"], [/ph/g, "f"],
       [/h(?![aeiou])/g, "i"],                     // greeklish writes η as h: kalhmera
       [/mp|mb/g, "b"], [/nt|nd/g, "d"], [/ng|gk/g, "g"],
       [/eu/g, "ef"], [/au/g, "af"], [/v/g, "f"], // αυ/ευ/β: f and v collapse
-      [/w/g, "o"], [/ou/g, "u"],
+      [/ou/g, "u"],
       [/ai/g, "e"], [/ei|oi|ui|ee|y/g, "i"],
       [/g(?=[ie])/g, "i"],                        // γεια: gia = yia = ia
-      [/([a-z8ψ])\1+/g, "$1"]                     // doubled letters
+      [/([a-z8ψξ])\1+/g, "$1"]                    // doubled letters
     ];
     rules.forEach(([re, to]) => { t = t.replace(re, to); });
     return t.replace(/i+/g, "i").replace(/\s+/g, "");    // word gaps don't matter: yiasou = yia sou
+  }
+
+  /* Does a typed answer match any of the accepted answers? A Latin x is tried both as χ and as ξ. */
+  function answerMatch(typed, answers){
+    const keys = (answers || []).map(a => answerKey(a));
+    return keys.includes(answerKey(typed)) || keys.includes(answerKey(typed, "ks"));
   }
 
   function hasGreek(s){ return GREEK_RE.test(String(s || "")); }
 
   root.translit = translit;
   root.answerKey = answerKey;
+  root.answerMatch = answerMatch;
   root.hasGreek = hasGreek;
 })(typeof window !== "undefined" ? window : globalThis);

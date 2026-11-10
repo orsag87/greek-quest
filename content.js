@@ -102,7 +102,7 @@ const SKILLS = {
 const STORIES_L0 = [
 
   { id:"l0-geia", level:"L0", diff:1, titleGr:"Γεια σου!", titleEn:"Hi!",
-    text:"— [Γεια σου|hi / bye]! [Με λένε|my name is] Μαρία. [Εσένα πώς σε λένε|what's your name];\n— [Γεια σου|hi / bye]! [Με λένε|my name is] Sam.\n— [Χάρηκα|nice to meet you], Sam.\n— [Χάρηκα|nice to meet you], Μαρία. [Τι κάνεις|how are you];\n— [Καλά|fine / well], [ευχαριστώ|thank you]. [Εσύ|and you];\n— [Πολύ καλά|very well]!",
+    text:"— [Γεια σου|hi / bye]! [Με λένε|my name is] Μαρία. [Εσένα πώς σε λένε|what's your name];\n— [Γεια σου|hi / bye]! [Με λένε|my name is] Sam.\n— [Χάρηκα|nice to meet you], Sam.\n— [Χάρηκα|nice to meet you], Μαρία. [Τι κάνεις|how are you];\n— [Καλά|fine / well], [ευχαριστώ|thank you]. [Εσύ|you? (= and you?)];\n— [Πολύ καλά|very well]!",
     quiz:[
       { q:"What is her name?", opts:["Sam","Μαρία","Ελένη"], a:1, skill:"comprehension" },
       { q:"What does «χάρηκα» mean?", opts:["nice to meet you","how are you","thank you very much"], a:0, skill:"courtesy" },
@@ -129,7 +129,7 @@ const STORIES_L0 = [
     ]},
 
   { id:"l0-souvlaki", level:"L0", diff:4, titleGr:"Ένα, δύο, τρία… σουβλάκια", titleEn:"One, two, three… souvlaki",
-    text:"[Ένα σουβλατζίδικο|a souvlaki shop] [στο Μοναστηράκι|in Monastiraki].\n— [Καλησπέρα|good evening]! [Τι θα πάρετε|what will you have];\n— [Τρία σουβλάκια|three souvlaki] [με πίτα|in pita bread], [παρακαλώ|please / you're welcome].\n— [Τίποτα άλλο|nothing else? (= anything else?)];\n— [Και|and / also] [δύο μπύρες|two beers].\nΟ κύριος Γιώργος [μετράει|counts]: [ένα|one], [δύο|two], [τρία|three].\nΜμμ! [Πολύ νόστιμο|very tasty]!\n— [Άλλα δύο|two more], [παρακαλώ|please / you're welcome]!\n— [Μάλιστα|certainly]! [Τέσσερα|four], [πέντε|five]… [πέντε σουβλάκια|five souvlaki] [συνολικά|in total]!",
+    text:"[Ένα σουβλατζίδικο|a souvlaki shop] [στο Μοναστηράκι|in Monastiraki].\n— [Καλησπέρα|good evening]! [Τι θα πάρετε|what will you have];\n— [Τρία σουβλάκια|three souvlaki] [με πίτα|in pita bread], [παρακαλώ|please / you're welcome].\n— [Τίποτα άλλο|nothing else? (= anything else?)];\n— [Και|and / also] [δύο μπύρες|two beers].\n[Ο κύριος Γιώργος|Mr Giorgos (the owner)] [μετράει|counts]: [ένα|one], [δύο|two], [τρία|three].\nΜμμ! [Πολύ νόστιμο|very tasty]!\n— [Άλλα δύο|two more], [παρακαλώ|please / you're welcome]!\n— [Μάλιστα|certainly]! [Τέσσερα|four], [πέντε|five]… [πέντε σουβλάκια|five souvlaki] [συνολικά|in total]!",
     quiz:[
       { q:"How many souvlaki do you order first?", opts:["two","three","five"], a:1, skill:"vocab-numbers" },
       { q:"What do you drink?", opts:["water","wine","beer"], a:2, skill:"vocab-food", explain:"<b>δύο μπύρες</b> = two beers. <b>η μπύρα</b> — μπ sounds like b." },
@@ -143,7 +143,7 @@ const STORIES_L0 = [
       { q:"Where is the toilet?", opts:["over there, on the right","right here, on the left","upstairs"], a:0, skill:"vocab-travel" },
       { q:"You point and ask «Εδώ;». You're asking…", opts:["there?","now?","here?"], a:2, skill:"vocab-daily", explain:"<b>εδώ</b> = here · <b>εκεί</b> = there." },
       { q:"Which door is for women?", opts:["«ΑΝΔΡΩΝ»","«ΓΥΝΑΙΚΩΝ»","both"], a:1, skill:"comprehension", trick:true, explain:"<b>ΓΥΝΑΙΚΩΝ</b> = women's — think <i>gynaecologist</i>. <b>ΑΝΔΡΩΝ</b> = men's — think <i>android</i>. English borrowed both roots." },
-      { q:"The sign says «Τα χαρτιά στο καλάθι». What should you do?", opts:["flush the paper","put used paper in the bin","take a paper towel"], a:1, skill:"comprehension", explain:"Greek pipes are narrow: used toilet paper goes in the little bin, not down the toilet. Hotels too — everybody does it." }
+      { q:"The sign says «Τα χαρτιά στο καλάθι». What should you do?", opts:["flush the paper","put used paper in the bin","take a paper towel"], a:1, skill:"comprehension", explain:"Greek pipes are narrow: used toilet paper goes in the little bin, not down the toilet — unless a sign says you can flush." }
     ]},
 
   { id:"l0-katalaveno", level:"L0", diff:6, titleGr:"Ναι, όχι, δεν καταλαβαίνω", titleEn:"Yes, no, I don't understand",
@@ -159,7 +159,7 @@ const STORIES_L0 = [
 const LESSONS_L0 = [
 
   { id:"l0L-alfavito1", level:"L0", diff:1, title:"Το αλφάβητο (1)", titleEn:"The alphabet, part 1: the friendly letters",
-    body:"Good news: you already know about half of the Greek alphabet — from English and from maths class. Learn these and you can read your first signs today.<br><br><b>Letters that look AND sound like English:</b><br>• Α α = a, as in «father»: <b>ταξί</b> = taxi<br>• Ε ε = e, as in «pet»: <b>μετρό</b> = metro<br>• Ι ι = i, as in «see»: <b>κιλό</b> = kilo<br>• Ο ο = o: <b>μόνο</b> = only<br>• Κ κ = k: <b>καφές</b> = coffee<br>• Μ μ = m: <b>μαμά</b> = mum<br>• Τ τ = t: <b>τένις</b> = tennis<br>• Ζ ζ = z: <b>ζέβρα</b> = zebra<br><br><b>Letters you know from maths:</b><br>• Π π (pi) = p: <b>πίτσα</b> = pizza<br>• Λ λ (lambda) = l: <b>λεμόνι</b> = lemon<br>• Σ σ ς (sigma) = s. At the end of a word it's written ς: <b>σαλάτα</b> = salad, <b>καφές</b><br>• Δ δ (delta) = a soft «th», as in «this»: <b>δέκα</b> = ten<br>• Θ θ (theta) = «th», as in «thin»: <b>θέατρο</b> = theatre<br>• Φ φ (phi) = f: <b>φέτα</b> = feta<br>• Ψ ψ (psi) = ps: <b>ψάρι</b> = fish<br>• Ξ ξ (xi) = x: <b>ταξί</b><br>• Ω ω (omega) = o, same as Ο: <b>ωραία</b> = lovely<br><br>💡 The little mark ´ shows which part to stress: <b>ταξί</b> = ta-XI, <b>μετρό</b> = me-TRO. Every word of two or more syllables has one.",
+    body:"Good news: you already know about half of the Greek alphabet — from English and from maths class. Learn these and you can read your first signs today.<br><br><b>Letters that look AND sound like English:</b><br>• Α α = a, as in «father»: <b>ταξί</b> = taxi<br>• Ε ε = e, as in «pet»: <b>μετρό</b> = metro<br>• Ι ι = i, as in «see»: <b>κιλό</b> = kilo<br>• Ο ο = o: <b>μόνο</b> = only<br>• Κ κ = k: <b>καφές</b> = coffee<br>• Μ μ = m: <b>μαμά</b> = mum<br>• Τ τ = t: <b>τένις</b> = tennis<br>• Ζ ζ = z: <b>ζέβρα</b> = zebra<br><br><b>Letters you know from maths:</b><br>• Π π (pi) = p: <b>πίτσα</b> = pizza<br>• Λ λ (lambda) = l: <b>λεμόνι</b> = lemon<br>• Σ σ ς (sigma) = s. At the end of a word it's written ς: <b>σαλάτα</b> = salad, <b>καφές</b><br>• Δ δ (delta) = a soft «th», as in «this»: <b>δέκα</b> = ten<br>• Θ θ (theta) = «th», as in «thin»: <b>θέατρο</b> = theatre<br>• Φ φ (phi) = f: <b>φέτα</b> = feta<br>• Ψ ψ (psi) = ps: <b>ψάρι</b> = fish<br>• Ξ ξ (xi) = x: <b>ταξί</b><br>• Ω ω (omega) = o, same as Ο: <b>ωραία</b> = lovely<br><br>💡 The little mark ´ shows which part to stress: <b>ταξί</b> = ta-XI, <b>μετρό</b> = me-TRO. Every word of two or more syllables has one (signs in CAPITALS leave it off, like ΤΑΞΙ).",
     practice:[
       { q:"Read this sign: ΤΑΞΙ", opts:["taxi","tax","toxic"], a:0, skill:"alphabet", notr:true },
       { q:"Read this word: μετρό", opts:["meter","metro","motor"], a:1, skill:"alphabet", notr:true },
@@ -225,7 +225,7 @@ const STORIES_L1 = [
     ]},
 
   { id:"l1-periptero", level:"L1", diff:2, titleGr:"Στο περίπτερο", titleEn:"At the kiosk",
-    text:"[Το περίπτερο|the kiosk] [είναι|is / are] [παντού|everywhere] [στην Ελλάδα|in / to Greece].\n— [Γεια σας|hello / goodbye (polite)]! [Ένα νερό|a (bottle of) water], [παρακαλώ|please / you're welcome].\n— [Μικρό|small] [ή|or] [μεγάλο|big];\n— [Μεγάλο|big]. [Έχετε|do you have] [αντηλιακό|sunscreen];\n— [Όχι|no], [δεν έχουμε|we don't have it]. [Το σούπερ μάρκετ|the supermarket] [είναι|is / are] [εκεί|there].\n— [Εντάξει|OK]. [Πόσο κάνει|how much is it];\n— [Ένα ευρώ|one euro].\n— [Ορίστε|here you go].\n— [Ευχαριστώ|thank you], [γεια σας|hello / goodbye (polite)]!",
+    text:"[Τα περίπτερα|kiosks] [είναι|is / are] [παντού|everywhere] [στην Ελλάδα|in / to Greece].\n— [Γεια σας|hello / goodbye (polite)]! [Ένα νερό|a (bottle of) water], [παρακαλώ|please / you're welcome].\n— [Μικρό|small] [ή|or] [μεγάλο|big];\n— [Μεγάλο|big]. [Έχετε|do you have] [αντηλιακό|sunscreen];\n— [Όχι|no], [δεν έχουμε|we don't have it]. [Το σούπερ μάρκετ|the supermarket] [είναι|is / are] [εκεί|there].\n— [Εντάξει|OK]. [Πόσο κάνει|how much is it];\n— [Ένα ευρώ|one euro].\n— [Ορίστε|here you go].\n— [Ευχαριστώ|thank you], [γεια σας|hello / goodbye (polite)]!",
     quiz:[
       { q:"What do you buy at the kiosk?", opts:["a big water","a small water","sunscreen"], a:0, skill:"comprehension" },
       { q:"Why don't you get sunscreen there?", opts:["it's too expensive","they don't have it","the kiosk is closed"], a:1, skill:"comprehension" },
@@ -266,14 +266,14 @@ const STORIES_L1 = [
       { q:"What does the waiter bring for free?", opts:["a coffee","a dessert","a bottle of wine"], a:1, skill:"comprehension", explain:"<b>κέρασμα</b> = a treat on the house. Very common after a meal in Greece — enjoy it." },
       { q:"How much is the bill?", opts:["€46","€50","€64"], a:0, skill:"vocab-numbers", explain:"<b>σαράντα έξι</b> = forty + six = 46." },
       { q:"How much do you leave as a tip?", opts:["nothing","€4","€10"], a:1, skill:"vocab-numbers", trick:true, explain:"You hand over <b>πενήντα</b> (50) for a bill of 46 and say «keep the change» — that's a €4 tip, a normal 5–10%." },
-      { q:"Type the Greek for “the bill” (as in «the bill, please»):", opts:[], a:["τον λογαριασμό","λογαριασμό","ο λογαριασμός","λογαριασμός"], type:"fill", skill:"phrases", explain:"<b>Τον λογαριασμό, παρακαλώ.</b> The bill won't come until you ask — rushing you would be rude." }
+      { q:"Type the Greek for “the bill” (as in «the bill, please»):", opts:[], a:["τον λογαριασμό","το λογαριασμό","λογαριασμό","ο λογαριασμός","λογαριασμός"], type:"fill", skill:"phrases", explain:"<b>Τον λογαριασμό, παρακαλώ.</b> The bill won't come until you ask — rushing you would be rude." }
     ]}
 ];
 
 const LESSONS_L1 = [
 
   { id:"l1L-thelo", level:"L1", diff:1, title:"Θα ήθελα…", titleEn:"Asking for things",
-    body:"Learn the chunk, swap the noun:<br>• <b>Θα ήθελα</b> ___ = I'd like ___ (polite — use this one)<br>• <b>Θέλω</b> ___ = I want ___ (fine with friends, a bit blunt with a waiter)<br>• <b>Έχετε</b> ___; = do you have ___?<br>• <b>Μπορώ να έχω</b> ___; = can I have ___?<br>• <b>Υπάρχει</b> ___ <b>εδώ κοντά</b>; = is there a ___ nearby?<br>• <b>Πού είναι</b> ___; = where is ___?<br>• <b>Πόσο κάνει;</b> = how much is it?<br><br>Swap in anything: <b>θα ήθελα έναν καφέ</b> · <b>θα ήθελα μια μπύρα</b> · <b>θα ήθελα ένα νερό</b><br><br>💡 <b>Υπάρχει φαρμακείο εδώ κοντά;</b> (Is there a pharmacy nearby?) works for anything: an ATM, a bakery, a beach.",
+    body:"Learn the chunk, swap the noun:<br>• <b>Θα ήθελα</b> ___ = I'd like ___ (polite — use this one)<br>• <b>Θέλω</b> ___ = I want ___ (normal in Greece too — θα ήθελα is just the extra-polite form)<br>• <b>Έχετε</b> ___; = do you have ___?<br>• <b>Θα πάρω</b> ___ = I'll have ___ (how Greeks order)<br>• <b>Υπάρχει</b> ___ <b>εδώ κοντά</b>; = is there a ___ nearby?<br>• <b>Πού είναι</b> ___; = where is ___?<br>• <b>Πόσο κάνει;</b> = how much is it?<br><br>Swap in anything: <b>θα ήθελα έναν καφέ</b> · <b>θα ήθελα μια μπύρα</b> · <b>θα ήθελα ένα νερό</b><br><br>💡 <b>Υπάρχει φαρμακείο εδώ κοντά;</b> (Is there a pharmacy nearby?) works for anything: an ATM, a bakery, a beach.",
     practice:[
       { q:"The most polite way to order is…", opts:["Θέλω έναν καφέ.","Θα ήθελα έναν καφέ.","Καφέ!"], a:1, skill:"phrases" },
       { q:"«Υπάρχει φαρμακείο εδώ κοντά;» means…", opts:["Is there a pharmacy nearby?","Where's the pharmacy?","The pharmacy is near here."], a:0, skill:"phrases" },
@@ -320,16 +320,16 @@ const LESSONS_L1 = [
 const STORIES_L2 = [
 
   { id:"l2-ploio", level:"L2", diff:1, titleGr:"Το πλοίο για Σαντορίνη", titleEn:"The ferry to Santorini",
-    text:"[Στο πρακτορείο|at the ticket office] [στο λιμάνι|at / to the port] [της Νάξου|of Naxos].\n— [Καλημέρα|good morning]. [Δύο εισιτήρια|two tickets] [για Σαντορίνη|to Santorini], [παρακαλώ|please / you're welcome].\n— [Για σήμερα|for today];\n— [Ναι|yes]. [Τι ώρα|what time] [φεύγει|leaves] [το πλοίο|the ferry];\n— [Στις επτά και μισή|at seven thirty]. [Φτάνει|it arrives] [στις εννιά και μισή|at nine thirty].\n— [Πόσο κάνει|how much is it];\n— [Ογδόντα ευρώ|eighty euros] [τα δύο|for the two].\n— [Εντάξει|OK]. [Από ποια πύλη|from which gate];\n— [Δεν έχει πύλη|there's no gate] [εδώ|here]! [Να είστε στο λιμάνι|be at the port] [μισή ώρα νωρίτερα|half an hour early].",
+    text:"[Στο πρακτορείο|at the ticket office] [στο λιμάνι|at / to the port] [της Νάξου|of Naxos].\n— [Καλημέρα|good morning]. [Δύο εισιτήρια|two tickets] [για Σαντορίνη|to Santorini], [παρακαλώ|please / you're welcome].\n— [Για σήμερα|for today];\n— [Ναι|yes]. [Τι ώρα|what time] [φεύγει|leaves] [το πλοίο|the ferry];\n— [Στις δέκα και μισή|at ten thirty]. [Φτάνει|it arrives] [στις δώδεκα και μισή|at twelve thirty].\n— [Πόσο κάνουν|how much are];\n— [Ογδόντα ευρώ|eighty euros] [τα δύο|for the two].\n— [Εντάξει|OK]. [Από ποια πύλη|from which gate];\n— [Δεν έχει πύλη|there's no gate] [εδώ|here]! [Να είστε στο λιμάνι|be at the port] [μισή ώρα νωρίτερα|half an hour early].",
     quiz:[
       { q:"Where are you going?", opts:["Santorini","Piraeus","Crete"], a:0, skill:"vocab-travel" },
-      { q:"What time does the ferry leave?", opts:["7:30","7:00","9:30"], a:0, skill:"vocab-numbers", explain:"<b>στις επτά και μισή</b> = at seven and a half = 7:30." },
+      { q:"What time does the ferry leave?", opts:["10:30","10:00","12:30"], a:0, skill:"vocab-numbers", explain:"<b>στις δέκα και μισή</b> = at ten and a half = 10:30." },
       { q:"How much does ONE ticket cost?", opts:["€80","€40","€18"], a:1, skill:"vocab-numbers", trick:true, explain:"<b>ογδόντα ευρώ τα δύο</b> = 80 for the two of you — so 40 each." },
-      { q:"When should you be at the port?", opts:["half an hour early","an hour early","at 9:30"], a:0, skill:"comprehension" }
+      { q:"When should you be at the port?", opts:["half an hour early","an hour early","at 12:30"], a:0, skill:"comprehension" }
     ]},
 
   { id:"l2-paralia", level:"L2", diff:2, titleGr:"Στην παραλία", titleEn:"At the beach",
-    text:"[Μια παραλία|a beach] [στη Νάξο|in / to Naxos]. [Ο ήλιος|the sun] [καίει|burns].\n— [Συγγνώμη|excuse me / sorry], [πόσο κάνουν|how much are] [οι ξαπλώστρες|the sunbeds];\n— [Δέκα ευρώ|ten euros] [με την ομπρέλα|with the umbrella]. [Αλλά|but] [αν πάρετε κάτι από το μπαρ|if you order something from the bar], [είναι δωρεάν|they're free].\n— [Τέλεια|perfect / great]! [Δύο φραπέ|two frappés], [παρακαλώ|please / you're welcome].\n— [Μάλιστα|certainly]! [Κάτι άλλο|anything else];\n— [Όχι|no], [ευχαριστώ|thank you].\n[Η θάλασσα|the sea] [είναι|is / are] [κρύα|cold] [αλλά|but] [πεντακάθαρη|crystal clear]. [Σιγά σιγά|slowly, slowly]… [μέσα|in you go]!",
+    text:"[Μια παραλία|a beach] [στη Νάξο|in / to Naxos]. [Ο ήλιος|the sun] [καίει|burns].\n— [Συγγνώμη|excuse me / sorry], [πόσο κάνουν|how much are] [οι ξαπλώστρες|the sunbeds];\n— [Δέκα ευρώ|ten euros] [με την ομπρέλα|with the umbrella]. [Αλλά|but] [αν πάρετε κάτι από το μπαρ|if you order something from the bar], [είναι δωρεάν|they're free].\n— [Τέλεια|perfect / great]! [Δύο φραπέ|two frappés], [παρακαλώ|please / you're welcome].\n— [Μάλιστα|certainly]! [Κάτι άλλο|anything else];\n— [Όχι|no], [ευχαριστώ|thank you].\n[Η θάλασσα|the sea] [είναι|is / are] [κρύα|cold] [αλλά|but] [πεντακάθαρη|crystal clear]. [Σιγά σιγά|slowly, slowly]… [μέσα|in / inside]!",
     quiz:[
       { q:"How much are the sunbeds if you don't order anything?", opts:["they're free","€10","€2"], a:1, skill:"vocab-numbers" },
       { q:"How do you get the sunbeds for free?", opts:["come early","order something from the bar","bring your own umbrella"], a:1, skill:"comprehension" },
@@ -347,7 +347,7 @@ const STORIES_L2 = [
     ]},
 
   { id:"l2-laiki", level:"L2", diff:4, titleGr:"Στη λαϊκή", titleEn:"At the street market",
-    text:"[Κάθε Σάββατο|every Saturday] [έχει|there is / there are] [λαϊκή|a street market].\n— [Ντομάτες|tomatoes]! [Φρέσκες ντομάτες|fresh tomatoes]! [Ένα ευρώ|one euro] [το κιλό|a kilo]!\n— [Καλημέρα|good morning]. [Ένα κιλό ντομάτες|a kilo of tomatoes], [παρακαλώ|please / you're welcome].\n— [Ορίστε|here you go]. [Τίποτα άλλο|nothing else? (= anything else?)];\n— [Ναι|yes], [μισό κιλό|half a kilo] [σταφύλια|grapes]. [Είναι γλυκά|are they sweet];\n— [Σαν μέλι|like honey]! [Δοκίμασε|try one]!\n— Μμμ… [πολύ γλυκά|very sweet]!\n— [Δύο ευρώ|two euros] [όλα|altogether]. [Και|and / also] [λίγο μαϊντανό|a bit of parsley] — [δώρο|a gift]!",
+    text:"[Κάθε Σάββατο|every Saturday] [έχει|there is / there are] [λαϊκή|a street market].\n— [Ντομάτες|tomatoes]! [Φρέσκες ντομάτες|fresh tomatoes]! [Ένα ευρώ|one euro] [το κιλό|a kilo]!\n— [Καλημέρα|good morning]. [Ένα κιλό ντομάτες|a kilo of tomatoes], [παρακαλώ|please / you're welcome].\n— [Ορίστε|here you go]. [Τίποτα άλλο|nothing else? (= anything else?)];\n— [Ναι|yes], [μισό κιλό|half a kilo] [σταφύλια|grapes]. [Είναι γλυκά|are they sweet];\n— [Σαν μέλι|like honey]! [Δοκίμασε|try (it)]!\n— Μμμ… [πολύ γλυκά|very sweet]!\n— [Δύο ευρώ|two euros] [όλα|all (= altogether)]. [Και|and / also] [λίγο μαϊντανό|a bit of parsley] — [δώρο|a gift]!",
     quiz:[
       { q:"How much are the tomatoes?", opts:["€1 a kilo","€2 a kilo","€1 each"], a:0, skill:"vocab-numbers" },
       { q:"How many grapes do you buy?", opts:["a kilo","half a kilo","two kilos"], a:1, skill:"comprehension" },
@@ -381,9 +381,9 @@ const LESSONS_L2 = [
     practice:[
       { q:"«Μου αρέσουν οι ελιές» means…", opts:["I like olives","I'd like olives","olives like me"], a:0, skill:"likes" },
       { q:"You like the sea (one thing). You say…", opts:["Μου αρέσει η θάλασσα.","Μου αρέσουν η θάλασσα.","Μου αρέσεις η θάλασσα."], a:0, skill:"likes", explain:"One thing → <b>μου αρέσει</b>. (<b>Μου αρέσεις</b> = I like you!)" },
-      { q:"You like the beaches (several). You say…", opts:["Μου αρέσει οι παραλίες.","Μου αρέσουν οι παραλίες.","Σου αρέσουν οι παραλίες."], a:1, skill:"likes" },
+      { q:"You want to say «I like the beaches». You say…", opts:["Μου αρέσει οι παραλίες.","Μου αρέσουν οι παραλίες.","Σου αρέσουν οι παραλίες."], a:1, skill:"likes" },
       { q:"Translate: «Σας αρέσει η Νάξος;»", opts:["Do you like Naxos?","I like Naxos.","Is Naxos nice?"], a:0, skill:"translation" },
-      { q:"Type the Greek for “I don't like” (+ one thing):", opts:[], a:["δεν μου αρέσει"], type:"fill", skill:"likes", explain:"<b>Δεν μου αρέσει</b> — δεν (not) goes first." }
+      { q:"Type the Greek for “I don't like” (+ one thing):", opts:[], a:["δεν μου αρέσει","δε μου αρέσει"], type:"fill", skill:"likes", explain:"<b>Δεν μου αρέσει</b> — δεν (not) goes first." }
     ]},
 
   { id:"l2L-ora", level:"L2", diff:2, title:"Τι ώρα είναι;", titleEn:"Time & days",
@@ -397,7 +397,7 @@ const LESSONS_L2 = [
     ]},
 
   { id:"l2L-kateythynseis", level:"L2", diff:3, title:"Αριστερά, δεξιά", titleEn:"Directions",
-    body:"• <b>αριστερά</b> = left · <b>δεξιά</b> = right · <b>ευθεία</b> = straight ahead<br>• <b>κοντά</b> = near · <b>μακριά</b> = far<br>• <b>δίπλα</b> = next to · <b>απέναντι</b> = opposite<br>• <b>στη γωνία</b> = on the corner<br>• <b>πάνω</b> = up / upstairs · <b>κάτω</b> = down / downstairs<br><br>Three questions get you anywhere:<br>• <b>Πού είναι…;</b> = where is…?<br>• <b>Είναι μακριά;</b> = is it far?<br>• <b>Πόσα λεπτά με τα πόδια;</b> = how many minutes on foot?<br><br>💡 Greeks point with the whole hand and say <b>εκεί</b> (there) a lot. Watch the hand more than the words.",
+    body:"• <b>αριστερά</b> = left · <b>δεξιά</b> = right · <b>ευθεία</b> = straight ahead<br>• <b>κοντά</b> = near · <b>μακριά</b> = far<br>• <b>δίπλα</b> = next to · <b>απέναντι</b> = opposite<br>• <b>στη γωνία</b> = on the corner<br>• <b>πάνω</b> = up / upstairs · <b>κάτω</b> = down / downstairs<br><br>Three questions get you anywhere:<br>• <b>Πού είναι…;</b> = where is…?<br>• <b>Είναι μακριά;</b> = is it far?<br>• <b>Πόσα λεπτά με τα πόδια;</b> = how many minutes on foot?<br><br>💡 Greeks say <b>εκεί</b> (there) a lot while pointing. Watch the hand more than the words.",
     practice:[
       { q:"«Δίπλα στο σούπερ μάρκετ» means…", opts:["next to the supermarket","opposite the supermarket","inside the supermarket"], a:0, skill:"vocab-travel" },
       { q:"«Απέναντι» means…", opts:["opposite","next to","upstairs"], a:0, skill:"vocab-travel" },
@@ -424,7 +424,7 @@ const LESSONS_L2 = [
 const STORIES_L3 = [
 
   { id:"l3-apopou", level:"L3", diff:1, titleGr:"Από πού είσαι;", titleEn:"Where are you from?",
-    text:"[Ένα μπαρ|a bar] [στη Νάξο|in / to Naxos]. [Ένας Έλληνας|a Greek guy], ο Νίκος, [σου μιλάει|talks to you].\n— [Από πού είσαι|where are you from];\n— [Είμαι από τον Καναδά|I'm from Canada]. [Εσύ|and you];\n— [Από εδώ|from here], [από τη Νάξο|from Naxos]. [Μιλάς πολύ καλά ελληνικά|you speak Greek very well]!\n— [Λίγο|a little]. [Μαθαίνω|I'm learning] [με μια εφαρμογή|with an app].\n— [Μπράβο|well done]! [Πόσο καιρό|how long] [είσαι εδώ|have you been here];\n— [Μία εβδομάδα|one week]. [Φεύγω|I leave] [την Κυριακή|on Sunday].\n— [Κρίμα|what a pity]! [Γεια μας|cheers]!",
+    text:"[Ένα μπαρ|a bar] [στη Νάξο|in / to Naxos]. [Ένας Έλληνας|a Greek guy], ο Νίκος, [σου μιλάει|talks to you].\n— [Από πού είσαι|where are you from];\n— [Είμαι από τον Καναδά|I'm from Canada]. [Εσύ|you? (= and you?)];\n— [Από εδώ|from here], [από τη Νάξο|from Naxos]. [Μιλάς πολύ καλά ελληνικά|you speak Greek very well]!\n— [Λίγο|a little]. [Μαθαίνω|I'm learning] [με μια εφαρμογή|with an app].\n— [Μπράβο|well done]! [Πόσο καιρό|how long] [είσαι εδώ|have you been here];\n— [Μία εβδομάδα|one week]. [Φεύγω|I leave] [την Κυριακή|on Sunday].\n— [Κρίμα|what a pity]! [Γεια μας|cheers]!",
     quiz:[
       { q:"Where is Nikos from?", opts:["Athens","Naxos","Canada"], a:1, skill:"comprehension" },
       { q:"How are you learning Greek?", opts:["with a teacher","with an app","from friends"], a:1, skill:"comprehension" },
@@ -451,7 +451,7 @@ const STORIES_L3 = [
     ]},
 
   { id:"l3-panigyri", level:"L3", diff:4, titleGr:"Το πανηγύρι", titleEn:"The village festival",
-    text:"[Στο πανηγύρι|at the festival] [έχει|there is / there are] [πολύ κόσμο|lots of people]. [Η μουσική|the music] [παίζει|plays] [δυνατά|loudly].\n— [Έλα|come on / come], [χόρεψε|dance]! [Είναι εύκολο|it's easy]!\n— [Δεν ξέρω να χορεύω|I can't dance]…\n— [Δεν πειράζει|never mind]! [Κράτα το χέρι μου|hold my hand]. [Ένα|one], [δύο|two], [τρία|three]… [Όπα|opa! (a happy shout)]!\nΗ γιαγιά του Νίκου [σου δίνει|gives you] [ένα πιάτο φαγητό|a plate of food].\n— [Φάε|eat], [φάε|eat], [παιδί μου|my dear (literally «my child»)]!\n— [Ευχαριστώ|thank you], [γιαγιά|grandma]! [Είναι πολύ νόστιμο|it's very tasty]!\n[Στις τρεις|at three] [το πρωί|in the morning], [η μουσική|the music] [παίζει|plays] [ακόμα|still].",
+    text:"[Στο πανηγύρι|at the festival] [έχει|there is / there are] [πολύ κόσμο|lots of people]. [Η μουσική|the music] [παίζει|plays] [δυνατά|loudly].\n— [Έλα|come on / come], [χόρεψε|dance]! [Είναι εύκολο|it's easy]!\n— [Δεν ξέρω να χορεύω|I can't dance]…\n— [Δεν πειράζει|never mind]! [Κράτα το χέρι μου|hold my hand]. [Ένα|one], [δύο|two], [τρία|three]… [Όπα|opa! (a happy shout)]!\n[Η γιαγιά του Νίκου|Nikos's grandma] [σου δίνει|gives you] [ένα πιάτο φαγητό|a plate of food].\n— [Φάε|eat], [φάε|eat], [παιδί μου|my dear (literally «my child»)]!\n— [Ευχαριστώ|thank you], [γιαγιά|grandma]! [Είναι πολύ νόστιμο|it's very tasty]!\n[Στις τρεις|at three] [το πρωί|in the morning], [η μουσική|the music] [παίζει|plays] [ακόμα|still].",
     quiz:[
       { q:"Why don't you want to dance at first?", opts:["you're tired","you don't know how","the music is bad"], a:1, skill:"comprehension" },
       { q:"«Δεν πειράζει» means…", opts:["never mind / no problem","don't touch","not now"], a:0, skill:"greek-life" },
@@ -486,7 +486,7 @@ const LESSONS_L3 = [
     practice:[
       { q:"«Θα πάω» means…", opts:["I went","I'll go","I go"], a:1, skill:"future" },
       { q:"Your friend answers your plan with «Θα δούμε». She means…", opts:["we saw it","we'll see","let's meet"], a:1, skill:"future" },
-      { q:"Tomorrow I'll eat fish: «Αύριο ___ ψάρι.»", opts:["έφαγα","θα φάω","τρώω"], a:1, skill:"future" },
+      { q:"Tomorrow I'll eat fish: «Αύριο ___ ψάρι.»", opts:["έφαγα","θα φάω","έτρωγα"], a:1, skill:"future" },
       { q:"Translate: «Θα έρθεις;»", opts:["Will you come?","Did you come?","Are you home?"], a:0, skill:"translation" },
       { q:"Type the Greek for “I'll drink”:", opts:[], a:["θα πιω"], type:"fill", skill:"future", explain:"<b>θα πιω</b> = I'll drink. (<b>ήπια</b> = I drank.)" }
     ]},
@@ -567,7 +567,7 @@ const STORIES_L4 = [
 const LESSONS_L4 = [
 
   { id:"l4L-na", level:"L4", diff:1, title:"Να + ρήμα", titleEn:"«To do» in Greek: να",
-    body:"Greek has no «to go», «to eat». Instead it says <b>να</b> + the verb, with the person on it:<br>• <b>Θέλω να πάω</b> = I want to go<br>• <b>Πρέπει να φύγω</b> = I have to leave<br>• <b>Μπορώ να έρθω;</b> = Can I come?<br>• <b>Ξέρω να μαγειρεύω</b> = I know how to cook<br><br>After να, a one-off action takes the same short form as after θα: <b>θα πάω → να πάω</b>, <b>θα φάω → να φάω</b>, <b>θα δω → να δω</b>, <b>θα αγοράσω → να αγοράσω</b>.<br><br>Both verbs change with the person: <b>θέλεις να πας</b> (you want to go), <b>θέλουμε να πάμε</b> (we want to go).<br><br>💡 να alone makes a soft wish or command: <b>Να προσέχεις!</b> (take care!), <b>Να είστε καλά!</b> (be well!).",
+    body:"Greek has no «to go», «to eat». Instead it says <b>να</b> + the verb, with the person on it:<br>• <b>Θέλω να πάω</b> = I want to go<br>• <b>Πρέπει να φύγω</b> = I have to leave<br>• <b>Μπορώ να έρθω;</b> = Can I come?<br>• <b>Ξέρω να μαγειρεύω</b> = I know how to cook<br><br>After να, a one-off action takes the same short form as after θα: <b>θα πάω → να πάω</b>, <b>θα φάω → να φάω</b>, <b>θα δω → να δω</b>, <b>θα αγοράσω → να αγοράσω</b>.<br><br>Both verbs change with the person: <b>θέλεις να πας</b> (you want to go), <b>θέλουμε να πάμε</b> (we want to go) — except <b>πρέπει</b>, which never changes: <b>πρέπει να φύγουμε</b> = we have to leave.<br><br>💡 να alone makes a soft wish or command: <b>Να προσέχεις!</b> (take care!), <b>Να είστε καλά!</b> (be well!).",
     practice:[
       { q:"«Πρέπει να φύγω» means…", opts:["I have to leave","I want to leave","I left"], a:0, skill:"na" },
       { q:"Complete: «Θέλω ___ στην παραλία.» (I want to go)", opts:["πάω","να πάω","να πήγα"], a:1, skill:"na" },
@@ -580,7 +580,7 @@ const LESSONS_L4 = [
     body:"• <b>Νομίζω ότι…</b> / <b>Νομίζω πως…</b> = I think that…<br>• <b>Πιστεύω ότι…</b> = I believe that…<br>• <b>Κατά τη γνώμη μου…</b> = in my opinion…<br>• <b>Συμφωνώ</b> = I agree · <b>Δεν συμφωνώ</b> = I disagree<br>• <b>Έχεις δίκιο</b> = you're right · <b>Δεν έχεις άδικο</b> = you're not wrong<br>• <b>Εξαρτάται</b> = it depends<br>• <b>Σίγουρα</b> = definitely · <b>Μάλλον</b> = probably · <b>Δεν νομίζω</b> = I don't think so<br><br><b>Comparing:</b> <b>πιο</b> + adjective = more: <b>πιο όμορφη</b> (more beautiful), <b>πιο ακριβό</b> (more expensive). The best: <b>ο καλύτερος</b> / <b>η καλύτερη</b> / <b>το καλύτερο</b>.<br><br>💡 Greeks love a good debate over coffee — disagreeing loudly is friendly, not rude.",
     practice:[
       { q:"«Εξαρτάται» means…", opts:["it depends","it's expensive","it's finished"], a:0, skill:"opinions" },
-      { q:"«Μάλλον» means…", opts:["probably","more","never"], a:0, skill:"opinions" },
+      { q:"«Μάλλον» means…", opts:["probably","always","never"], a:0, skill:"opinions" },
       { q:"Your friend makes a good point. You say…", opts:["Έχεις δίκιο.","Δεν συμφωνώ.","Εξαρτάται."], a:0, skill:"opinions" },
       { q:"Translate: «Η Αθήνα είναι πιο μεγάλη.»", opts:["Athens is bigger.","Athens is the biggest.","Athens is very big."], a:0, skill:"translation" },
       { q:"Type the Greek for “I agree”:", opts:[], a:["συμφωνώ"], type:"fill", skill:"opinions", explain:"<b>συμφωνώ</b> = I agree — think «symphony», sounding together." }
@@ -599,7 +599,7 @@ const LESSONS_L4 = [
   { id:"l4L-dopios", level:"L4", diff:4, title:"Σαν ντόπιος", titleEn:"Sound like a local",
     body:"The words Duolingo never taught you — you'll hear them every five minutes:<br>• <b>Έλα!</b> = come on! / hi! (answering the phone) / no way!<br>• <b>Άντε!</b> = go on! / hurry up! / finally!<br>• <b>Ρε</b> = hey, mate — friends only: <b>έλα ρε!</b><br>• <b>Τέλεια!</b> = perfect! · <b>Κανένα πρόβλημα</b> = no problem<br>• <b>Σιγά σιγά</b> = slowly, slowly · but <b>Σιγά!</b> on its own, with a look = «big deal!»<br>• <b>Πω πω!</b> = wow / oh my<br>• <b>Χαλαρά</b> = chill, relax<br>• <b>Τα λέμε</b> = see you · <b>Καλή συνέχεια</b> = have a good rest of the day<br>• <b>Χρόνια πολλά!</b> = happy birthday / name day / holiday — said on any celebration<br><br>Two words with no English match:<br>• <b>κέφι</b> = joyful high spirits, the mood when the dancing starts<br>• <b>φιλότιμο</b> = pride in doing right by others<br><br>💡 Careful with an open palm pushed toward someone's face (the <b>μούντζα</b>) — it's a rude gesture. A normal wave is fine.",
     practice:[
-      { q:"Your friend calls and answers with «Έλα!». It means…", opts:["hi! / go ahead!","come here right now!","goodbye!"], a:0, skill:"greek-life" },
+      { q:"You call your friend and she answers «Έλα!». It means…", opts:["hi! / go ahead!","come here right now!","goodbye!"], a:0, skill:"greek-life" },
       { q:"«Χρόνια πολλά!» is said…", opts:["on birthdays, name days and holidays","when someone sneezes","when you leave"], a:0, skill:"greek-life" },
       { q:"Your friend brags about a tiny fish he caught. You tease him…", opts:["Σιγά!","Μπράβο!","Περαστικά!"], a:0, skill:"greek-life", explain:"<b>Σιγά!</b> with a raised eyebrow = «big deal!» (<b>Περαστικά</b> = get well soon.)" },
       { q:"Translate: «Κανένα πρόβλημα.»", opts:["No problem.","No way.","Not now."], a:0, skill:"translation" },
@@ -642,7 +642,7 @@ const PLACEMENT = {
   ],
   L3:[
     { q:"«Χθες πήγαμε στην παραλία» means…", opts:["Yesterday we went to the beach","Tomorrow we'll go to the beach","We go to the beach every day","Yesterday they went to the beach"], a:0 },
-    { q:"Complete: «Αύριο ___ ψάρι.» (I'll eat)", opts:["θα φάω","έφαγα","τρώω","θα έφαγα"], a:0 },
+    { q:"Complete: «Αύριο ___ ψάρι.» (I'll eat)", opts:["θα φάω","έφαγα","έτρωγα","θα έφαγα"], a:0 },
     { q:"«Το κινητό της» means…", opts:["her phone","his phone","my phone","your phone"], a:0 },
     { q:"«Πεινάω» means…", opts:["I'm hungry","I'm thirsty","I'm tired","I'm cold"], a:0 },
     { q:"«Είδα» is the past of…", opts:["βλέπω (see)","δίνω (give)","ξέρω (know)","λέω (say)"], a:0 },

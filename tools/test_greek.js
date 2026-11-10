@@ -2,7 +2,7 @@
 // 1. translit() on words a learner meets, against hand-checked pronunciations.
 // 2. answerKey(): common Latin spellings must match the Greek answer; different words must not.
 require("../greek.js");
-const { translit, answerKey } = globalThis;
+const { translit, answerKey, answerMatch } = globalThis;
 let fails = 0;
 const eq = (got, want, what) => { if (got !== want) { fails++; console.log(`✗ ${what}: got «${got}» want «${want}»`); } };
 
@@ -26,6 +26,12 @@ const TR = {
 Object.entries(TR).forEach(([g, w]) => eq(translit(g), w, `translit ${g}`));
 
 const SAME = [
+  ["εντάξει", ["entaksi", "entaxi", "endaksi", "entaksei", "εντάξει", "εντάξι"]],
+  ["έχω", ["exw", "exo", "eho", "echo", "ekho", "εχω"]],
+  ["μου αρέσει", ["moy aresei", "mou aresei", "mu aresi"]],
+  ["γιαγιά", ["giagia", "yiayia", "yaya"]],
+  ["έξι", ["eksi", "exi", "εξι"]],
+  ["δε μου αρέσει", ["de mou aresi"]],
   ["ευχαριστώ", ["efharisto","efcharisto","efkharisto","eyxaristw","efxaristo","evharisto","Efharistó","ευχαριστω","ΕΥΧΑΡΙΣΤΩ"]],
   ["γεια σου", ["yia sou","ya sou","geia sou","gia sou","yiasou","yia su","Γεια σου","γεια σου!"]],
   ["καλημέρα", ["kalimera","kalhmera","Kaliméra","καλημερα"]],
@@ -41,9 +47,9 @@ const SAME = [
   ["ένα", ["ena"]],
   ["Πού είναι;", ["pou einai","pou ine?","Που ειναι"]]
 ];
-SAME.forEach(([g, list]) => list.forEach(t => { if (answerKey(t) !== answerKey(g)) { fails++; console.log(`✗ «${t}» should match «${g}»: ${answerKey(t)} ≠ ${answerKey(g)}`); } }));
+SAME.forEach(([g, list]) => list.forEach(t => { if (!answerMatch(t, [g])) { fails++; console.log(`✗ «${t}» should match «${g}»: ${answerKey(t)} ≠ ${answerKey(g)}`); } }));
 
-const DIFF = [["ναι","όχι"],["ένα","δύο"],["καλημέρα","καληνύχτα"],["νερό","κρασί"],["θέλω","έχω"],["μία","ένα"],["τρία","τέσσερα"],["εδώ","εκεί"]];
+const DIFF = [["ναι","όχι"],["ένα","δύο"],["καλημέρα","καληνύχτα"],["νερό","κρασί"],["θέλω","έχω"],["μία","ένα"],["τρία","τέσσερα"],["εδώ","εκεί"],["έχω","έξω"],["έξι","έχει"]];
 DIFF.forEach(([a, b]) => { if (answerKey(a) === answerKey(b)) { fails++; console.log(`✗ «${a}» and «${b}» collide: ${answerKey(a)}`); } });
 
 console.log(fails ? `\n${fails} failure(s)` : `OK — ${Object.keys(TR).length} transliterations, ${SAME.reduce((n, [, l]) => n + l.length, 0)} spellings, ${DIFF.length} distinct pairs`);

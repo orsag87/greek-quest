@@ -199,7 +199,7 @@
 
   .scrim{position:fixed;inset:0;background:rgba(20,20,18,.5);display:none;align-items:flex-end;justify-content:center;z-index:50}
   .scrim.show{display:flex}
-  .sheet{background:var(--paper);width:100%;max-width:460px;border-radius:22px 22px 0 0;padding:22px 20px calc(26px + env(safe-area-inset-bottom));animation:slideup .25s ease}
+  .sheet{background:var(--paper);width:100%;max-width:460px;max-height:92vh;max-height:92dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;border-radius:22px 22px 0 0;padding:22px 20px calc(26px + env(safe-area-inset-bottom));animation:slideup .25s ease}
   .sheet h3{font-family:'Literata',Georgia,serif;font-size:22px;font-weight:600;margin-bottom:4px}
   .sheet p{font-size:13px;color:var(--ink-soft);margin-bottom:16px}
   .lvlbtns{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px}
@@ -295,7 +295,7 @@
     <button class="trbtn on" id="hudTr" onclick="toggleTr()" aria-pressed="true" title="Show how Greek words sound, in Latin letters">Aa</button>
     <div class="spacer"></div>
     <div id="hudGoal" title="Daily goal"></div>
-    <div class="stat" id="hudStreak">🔥 0<small>días</small></div>
+    <div class="stat" id="hudStreak">🔥 0<small>days</small></div>
     <div class="stat" id="hudXp" style="color:var(--gold)">★ 0<small>XP</small></div>
   </div>
 
@@ -422,9 +422,9 @@
 
 <!-- ?v= must be bumped together with CACHE in sw.js on every release: it stops a
      browser (or a local dev server) serving a stale script from its HTTP cache. -->
-<script src="greek.js?v=3"></script>
-<script src="content.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="greek.js?v=4"></script>
+<script src="content.js?v=4"></script>
+<script src="app.js?v=4"></script>
 <script>
   // register service worker for offline + smooth updates (no-op when opened via file://)
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){

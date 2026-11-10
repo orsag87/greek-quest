@@ -296,7 +296,10 @@ function renderHud(){
    every learner who already has it in S.miss would hit `undefined.name` and get a blank
    home screen, recoverable only by resetting their progress. Unknown keys are dropped. */
 function strongRounds(){ const r=S.recent[S.level]; return (Array.isArray(r)?r:[]).filter(a=>a>=0.85).length; }
-function weakSkills(){ return Object.keys(S.miss).filter(k=>SKILLS[k] && S.miss[k]>=2); }
+function weakSkills(){ return Object.keys(S.miss).filter(k=>SKILLS[k] && k!=="comprehension" && S.miss[k]>=2); }
+/* A story question can be asked away from its story only if it quotes the Greek it is about
+   ("«Πόσο κάνει;» means…") or is a typed answer. "How much is ONE ticket?" needs the scene. */
+function standalone(q){ return q.type==="fill" || /[\u0370-\u03FF]/.test(q.q||""); }
 function levelComplete(l){ const ss=storiesAt(l); return ss.length>0 && ss.every(s=>S.stars.hasOwnProperty(s.id)); }
 function bossAvailable(){
   const l=S.level;
@@ -395,10 +398,13 @@ function renderHome(){
     return `<div class="story-card ${done?'done':''}" onclick="openStory('${s.id}')"><div class="story-num">${done?'✓':i+1}</div><div class="story-meta"><div class="t">${grInline(s.titleGr)}</div><div class="e">${s.titleEn}</div></div><div class="stars">${starString(st)}</div></div>`;
   }).join("");
 
-  document.getElementById("footer").classList.add("hidden");
-  mascot("idle","");
+  // Settings (level pick, name save) re-renders home behind whatever view is open —
+  // only hide the footer when home is actually showing, or results loses its way out.
+  const v=document.body.dataset.view;
+  if(!v || v==="home"){ document.getElementById("footer").classList.add("hidden"); mascot("idle",""); }
 }
-function goHome(){ if(window.speechSynthesis) speechSynthesis.cancel(); mode="story"; show("home"); renderHome(); window.scrollTo(0,0); }
+let matchTimer=null;
+function goHome(){ clearTimeout(matchTimer); matchTimer=null; if(window.speechSynthesis) speechSynthesis.cancel(); mode="story"; show("home"); renderHome(); window.scrollTo(0,0); }
 
 /* ===== READING ===== */
 let current=null, mode="story", practiceSkill=null;
@@ -474,17 +480,17 @@ function utter(text){
 /* Tokenize the story into words (glosses stay one tappable token) and build words[]
    for read-aloud. Each Greek token is a little two-line stack: the word, and its
    pronunciation underneath (.trs, hidden by body.notr). */
-function stack(gr, extra){
-  return `<span class="ws"><span class="wg">${gr}</span><span class="trs">${escapeHtml(translit(gr))}</span></span>${extra||""}`;
+function stack(gr, extra){   // gr: RAW text — escaped here, after translit
+  return `<span class="ws"><span class="wg">${escapeHtml(gr)}</span><span class="trs">${escapeHtml(translit(gr))}</span></span>${extra||""}`;
 }
 function renderReadingBody(text){
   words=[]; let html=""; const re=/(\[[^|\]]+\|[^\]]+\])|(\s+)|([^\s\[]+)/g; let m;
   while((m=re.exec(text))){
     if(m[1]){ const g=/\[([^|\]]+)\|([^\]]+)\]/.exec(m[1]); const i=words.length; words.push(g[1]);
-      html+=`<span class="gloss wtok" data-i="${i}" data-gr="${escapeHtml(g[1])}">${stack(escapeHtml(g[1]), `<span class="pop">${g[2]}</span>`)}</span>`; }
+      html+=`<span class="gloss wtok" data-i="${i}" data-gr="${escapeHtml(g[1])}">${stack(g[1], `<span class="pop">${escapeHtml(g[2])}</span>`)}</span>`; }
     else if(m[2]){ html+=m[2]; }
     else { const i=words.length; words.push(m[3]);
-      html+= hasGreek(m[3]) ? `<span class="wtok" data-i="${i}">${stack(escapeHtml(m[3]))}</span>` : `<span class="wtok" data-i="${i}">${escapeHtml(m[3])}</span>`; }
+      html+= hasGreek(m[3]) ? `<span class="wtok" data-i="${i}">${stack(m[3])}</span>` : `<span class="wtok" data-i="${i}">${escapeHtml(m[3])}</span>`; }
   }
   return html;
 }
@@ -603,11 +609,11 @@ function submitFill(giveUp){
   if(!giveUp && !inp.value.trim()){ inp.focus(); inp.classList.add("nudge"); setTimeout(()=>inp.classList.remove("nudge"),400); return; }
   qLocked=true;
   // Greek or Latin, any accents, any common spelling: efharisto = ευχαριστώ
-  const ok=!giveUp && item.a.map(answerKey).includes(answerKey(inp.value));
+  const ok=!giveUp && answerMatch(inp.value, item.a);
   inp.disabled=true; inp.classList.add(ok?"ok":"bad");
   document.querySelectorAll("#qOpts .btn").forEach(x=>x.disabled=true);
   const fb=document.getElementById("qFeedback"), want=item.a[0];
-  const say=`<div class="fillans"><b class="say" role="button" tabindex="0" aria-label="Listen to ${escapeHtml(want)}">${escapeHtml(want)}</b> ${trInline(want)} <button class="gsp" onclick="speakWord('${escapeHtml(want).replace(/'/g,"&#39;")}')" aria-label="Listen">🔊</button></div>`;
+  const say=`<div class="fillans"><b class="say" role="button" tabindex="0" aria-label="Listen to ${escapeHtml(want)}">${escapeHtml(want)}</b> ${trInline(want)} <button class="gsp" onclick="sayBold(this.parentNode.querySelector('b.say'))" aria-label="Listen">🔊</button></div>`;
   if(ok){ fb.innerHTML=`Σωστά! ✓ Correct${norm(inp.value)===norm(want)?"":say}`; fb.className="qfeedback ok"; mascot("happy", pick(YAY)); }
   else { fb.innerHTML=`${giveUp?"Here it is":"Not quite"} — the answer:${say}`; fb.className="qfeedback no"; mascot("sad", pick(OOPS)); }
   record(item,ok); afterAnswer(item,ok); save();
@@ -740,7 +746,7 @@ const PRACTICE_N = 6;
    AND Language Lab practice banks. */
 function skillPool(skill){
   const pool=[];
-  STORIES.forEach(s=>s.quiz.forEach(q=>{ if((q.skill||"comprehension")===skill) pool.push(q); }));
+  STORIES.forEach(s=>s.quiz.forEach(q=>{ if((q.skill||"comprehension")===skill && standalone(q)) pool.push(q); }));
   (window.LESSONS||[]).forEach(l=>(l.practice||[]).forEach(q=>{ if((q.skill||"")===skill) pool.push(q); }));
   return pool;
 }
@@ -968,7 +974,7 @@ function evalMatch(){
     matchedThisBoard++; selL=null; selR=null;
     save(); updateMatchCount();
     mascot("happy", pick(["✓","Μπράβο! · bravo","Σωστά! · correct","Ναι! · yes"]));
-    if(matchedThisBoard>=matchPairs.length){ matchLock=true; setTimeout(nextMatchBoard,650); }
+    if(matchedThisBoard>=matchPairs.length){ matchLock=true; matchTimer=setTimeout(()=>{ matchTimer=null; nextMatchBoard(); },650); }
   } else {
     matchLock=true; matchDirty.add(gr);
     lb.classList.add("bad"); rb.classList.add("bad");
@@ -1001,7 +1007,7 @@ function startBoss(){
   // Prefer real LANGUAGE questions (grammar/usage/translation) from the level's
   // lessons — this is what makes a boss test comprehension, not story recall.
   let lang=shuffle(langBank(lvl));
-  let story=[]; storiesAt(lvl).forEach(s=>s.quiz.forEach(q=>story.push(q))); story=shuffle(story);
+  let story=[]; storiesAt(lvl).forEach(s=>s.quiz.forEach(q=>{ if(standalone(q)) story.push(q); })); story=shuffle(story);
   let pool;
   if(lang.length>=5){
     // mostly language questions + a couple story items for variety
@@ -1024,7 +1030,7 @@ let currentLessonId=null;
 function openGrammarLesson(id){
   const l=(window.LESSONS||[]).find(x=>x.id===id); if(!l) return;
   document.getElementById("lessonTitle").textContent=l.title;
-  document.getElementById("lessonSub").textContent=`${l.titleEn} · Lección`;
+  document.getElementById("lessonSub").textContent=`${l.titleEn} · Lesson`;
   document.getElementById("lessonBody").innerHTML=speakify(l.body);
   show("lesson");
   const f=document.getElementById("footer"); f.classList.remove("hidden");
@@ -1058,8 +1064,9 @@ function startGrammarPractice(id){
    The result is a suggestion: the result screen offers "start from the beginning",
    and every level stays one tap away on the home screen. */
 const PLACE_PER_LEVEL = 3, PLACE_PASS = 2;
-let placeLevelIdx=0, placeQs=[], placeIdx=0, placeHits=0, placeBlocks={}, placeLock=false;
+let placeLevelIdx=0, placeQs=[], placeIdx=0, placeHits=0, placeBlocks={}, placeLock=false, placeTimer=null;
 function openPlacement(){
+  clearTimeout(placeTimer); placeTimer=null;
   placeLevelIdx=0; placeBlocks={};
   show("placement"); document.getElementById("footer").classList.add("hidden");
   startPlaceBlock();
@@ -1078,12 +1085,12 @@ function renderPlacement(){
   placeLock=false;
   const wrap=document.getElementById("placement");
   const q=placeQs[placeIdx];
-  let bars=""; for(let i=0;i<LEVELS.length;i++) bars+=`<div class="qbar ${i<=placeLevelIdx?'on':''}"></div>`;
+  let bars=""; for(let i=0;i<LEVELS.length-1;i++) bars+=`<div class="qbar ${i<=placeLevelIdx?'on':''}"></div>`;
   const first = placeLevelIdx===0 && placeIdx===0;
   wrap.innerHTML=`
     <div class="topnav"><button class="back" onclick="placementBack()">‹ Back</button></div>
     <div class="qprogress">${bars}</div>
-    <div class="qcount">LEVEL CHECK · PART ${placeLevelIdx+1} OF ${LEVELS.length} · ${placeIdx+1}/${placeQs.length}</div>
+    <div class="qcount">LEVEL CHECK · PART ${placeLevelIdx+1} OF ${LEVELS.length-1} · ${placeIdx+1}/${placeQs.length}</div>
     ${first?`<div class="placehint">No pressure: if you don't know, tap <b>“I don't know”</b> instead of guessing — it gives a truer result. The check gets harder as it goes and stops as soon as it finds your level.</div>`:""}
     <div class="qtext">${grInline(q.q, q.notr)}</div>
     <div id="pOpts">${q.opts.map((o,i)=>`<button class="opt" onclick="placeAnswer(${i})">${grBlock(o, q.notr)}</button>`).join("")}
@@ -1095,7 +1102,8 @@ function placeAnswer(i){
   const q=placeQs[placeIdx]; const ok=i===q.a;
   if(ok) placeHits++;
   document.querySelectorAll("#pOpts .opt").forEach((b,bi)=>{ b.disabled=true; if(bi===q.a) b.classList.add("correct"); if(bi===i&&i!==q.a) b.classList.add("wrong"); });
-  setTimeout(()=>{
+  placeTimer=setTimeout(()=>{
+    placeTimer=null;
     placeIdx++;
     const misses=placeIdx-placeHits;
     // done with this block once it's decided either way
@@ -1107,7 +1115,7 @@ function blockDone(){
   const l=LEVELS[placeLevelIdx];
   const passed = placeQs.length ? placeHits>=Math.min(PLACE_PASS, placeQs.length) : true;
   placeBlocks[l]=passed;
-  if(passed && placeLevelIdx<LEVELS.length-1){ placeLevelIdx++; startPlaceBlock(); }
+  if(passed && placeLevelIdx<LEVELS.length-2){ placeLevelIdx++; startPlaceBlock(); }
   else finishPlacement();
 }
 const PLACE_WHY = {
@@ -1143,13 +1151,13 @@ function finishPlacement(){
   window.scrollTo(0,0);
 }
 function acceptPlacement(l){
-  S.level=l; S.placed=true; S.recent[l]=[];
-  S.showTr = levelIdx(l)<3;          // readers of Greek start without the crutch; Aa brings it back
+  if(!S.placed) S.showTr = levelIdx(l)<3;   // first time only — a retake keeps their own Aa choice
+  S.level=l; S.placed=true; S.recent[l]=[];          // readers of Greek start without the crutch; Aa brings it back
   save(); goHome();
   mascot("celebrate", `Πάμε! · let's go, ${S.name||"friend"}! 🎉`, true);
 }
 /* Back out of the check: to the welcome screen on first open, home otherwise. */
-function placementBack(){ if(S.placed) goHome(); else openPlacementWelcome(); }
+function placementBack(){ clearTimeout(placeTimer); placeTimer=null; placeLock=false; if(S.placed) goHome(); else openPlacementWelcome(); }
 function skipPlacement(){ S.placed=true; save(); closeSettings(); goHome(); }
 
 /* ===== SETTINGS ===== */
