@@ -22,6 +22,9 @@ questions, 500 random guessers → L0 96% / L1 4% / L2 0.4%, no console errors. 
 **Shipped:** public repo `orsag87/greek-quest`, GitHub Pages from `main` → https://orsag87.github.io/greek-quest/
 (all 10 assets 200, serves `?v=4` / `greek-quest-v4`, live page boots to the welcome with no console errors).
 
+**Handover (2026-11-11):** owner previewed the live app in the browser pane and got a ready-to-paste message
+with the link for the friend; Claude sent nothing. Re-ran /wrap: docs already complete, nothing new to persist.
+
 ALE3IA: no task bound — Direct work, no DOCUMENT stamp. Not a BOSS/128s session → no board entry.
 
 ## Next
